@@ -1,10 +1,16 @@
-/* ===== Neo Dark Dashboard Styles ===== */
+/* ===================================
+   Dashboard Styles v2
+   Enhanced with Chart Styling & Micro-interactions
+   =================================== */
+
+/* ===== Page Layout ===== */
 .dashboard {
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
+/* ===== Loading States ===== */
 .dashboard-loading {
   display: flex;
   flex-direction: column;
@@ -29,7 +35,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* ===== Stats Grid - Neon Cards ===== */
+/* ===== Stats Grid - Neon Cards v2 ===== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -48,6 +54,18 @@
   box-shadow: var(--shadow), 0 0 0 1px var(--border-subtle);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid var(--border-subtle);
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+/* Staggered animation */
+.stats-grid .stat-card-new:nth-child(1) { animation-delay: 0ms; }
+.stats-grid .stat-card-new:nth-child(2) { animation-delay: 100ms; }
+.stats-grid .stat-card-new:nth-child(3) { animation-delay: 200ms; }
+.stats-grid .stat-card-new:nth-child(4) { animation-delay: 300ms; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .stat-card-new::before {
@@ -70,6 +88,10 @@
   transform: translateY(-8px);
   box-shadow: var(--shadow-md), 0 0 40px var(--card-glow, var(--primary-ghost));
   border-color: var(--card-accent, var(--primary));
+}
+
+.stat-card-new:active {
+  transform: translateY(-4px);
 }
 
 .gradient-cyan {
@@ -113,6 +135,7 @@
   flex-shrink: 0;
   border: 1px solid var(--border-light);
   position: relative;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .stat-card-icon::after {
@@ -124,6 +147,10 @@
   opacity: 0.3;
   z-index: -1;
   filter: blur(8px);
+}
+
+.stat-card-new:hover .stat-card-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .stat-card-content {
@@ -139,6 +166,11 @@
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.stat-card-new:hover .stat-card-value {
+  color: var(--card-accent, var(--primary));
 }
 
 .stat-card-label {
@@ -161,6 +193,7 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-light);
   color: var(--text-muted);
+  transition: all 0.3s;
 }
 
 .stat-card-trend.up {
@@ -175,11 +208,21 @@
   background: rgba(255, 69, 58, 0.1);
 }
 
+.stat-card-trend:hover {
+  transform: scale(1.05);
+}
+
 /* ===== Dashboard Grid ===== */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 400px;
   gap: 28px;
+  animation: fadeIn 0.5s ease-out 0.2s both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .dashboard-main {
@@ -194,9 +237,10 @@
   gap: 28px;
 }
 
-/* ===== Chart Card ===== */
+/* ===== Chart Card v2 ===== */
 .chart-card {
   padding: 28px;
+  animation: fadeInUp 0.4s ease-out 0.3s both;
 }
 
 .chart-header {
@@ -224,17 +268,23 @@
   font-weight: 500;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .chart-tab:hover {
   color: var(--text-primary);
+  background: var(--bg-card);
+  transform: translateY(-2px);
 }
 
 .chart-tab.active {
   background: var(--primary);
   color: var(--bg-primary);
   box-shadow: 0 0 15px var(--primary-glow);
+}
+
+.chart-tab.active:hover {
+  background: var(--primary-hover);
 }
 
 .chart-container {
@@ -282,12 +332,12 @@
   background: var(--bg-tertiary);
   border-radius: var(--radius);
   border: 1px solid var(--border-subtle);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .chart-stat:hover {
   border-color: var(--primary);
-  transform: translateX(4px);
+  transform: translateX(4px) scale(1.02);
   box-shadow: 0 0 15px var(--primary-ghost);
 }
 
@@ -295,6 +345,11 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.chart-stat:hover .chart-stat-value {
+  color: var(--primary);
 }
 
 .chart-stat-label {
@@ -324,9 +379,10 @@
   color: var(--text-muted);
 }
 
-/* ===== Distribution Card ===== */
+/* ===== Distribution Card v2 ===== */
 .distribution-card {
   padding: 28px;
+  animation: fadeInUp 0.4s ease-out 0.4s both;
 }
 
 .distribution-content {
@@ -338,11 +394,17 @@
 
 .donut-container {
   flex-shrink: 0;
+  position: relative;
 }
 
 .donut-chart-svg {
   width: 200px;
   height: 200px;
+  transition: transform 0.3s;
+}
+
+.donut-container:hover .donut-chart-svg {
+  transform: scale(1.05);
 }
 
 .donut-total {
@@ -371,12 +433,13 @@
   background: var(--bg-tertiary);
   border-radius: var(--radius);
   border: 1px solid var(--border-subtle);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
 }
 
 .legend-item:hover {
   border-color: var(--legend-color, var(--primary));
-  transform: translateX(4px);
+  transform: translateX(6px) scale(1.02);
   box-shadow: 0 0 15px var(--legend-glow, var(--primary-ghost));
 }
 
@@ -386,6 +449,11 @@
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: 0 0 10px var(--legend-color);
+  transition: transform 0.3s;
+}
+
+.legend-item:hover .legend-dot {
+  transform: scale(1.3);
 }
 
 .legend-info {
@@ -398,6 +466,11 @@
   font-weight: 600;
   color: var(--text-secondary);
   font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.legend-item:hover .legend-label {
+  color: var(--legend-color, var(--primary));
 }
 
 .legend-value {
@@ -409,11 +482,17 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-primary);
+  transition: color 0.3s;
 }
 
-/* ===== Activities Card ===== */
+.legend-item:hover .legend-percent {
+  color: var(--legend-color, var(--primary));
+}
+
+/* ===== Activities Card v2 ===== */
 .activities-card {
   padding: 24px;
+  animation: fadeInUp 0.4s ease-out 0.5s both;
 }
 
 .view-all-btn {
@@ -425,7 +504,7 @@
   font-weight: 500;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .view-all-btn:hover {
@@ -433,6 +512,11 @@
   color: var(--bg-primary);
   border-color: var(--primary);
   box-shadow: 0 0 15px var(--primary-glow);
+  transform: translateY(-2px);
+}
+
+.view-all-btn:active {
+  transform: translateY(0);
 }
 
 .activities-list {
@@ -447,6 +531,7 @@
   padding: 16px 0;
   border-bottom: 1px solid var(--border-subtle);
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .activity-item-new:last-child {
@@ -458,6 +543,7 @@
   margin: 0 -16px;
   padding: 16px;
   border-radius: var(--radius);
+  border-bottom-color: transparent;
 }
 
 .activity-dot {
@@ -467,6 +553,12 @@
   margin-top: 6px;
   flex-shrink: 0;
   box-shadow: 0 0 10px var(--activity-color, var(--primary));
+  animation: pulse 2s infinite;
+  transition: transform 0.3s;
+}
+
+.activity-item-new:hover .activity-dot {
+  transform: scale(1.5);
 }
 
 .activity-content {
@@ -478,6 +570,11 @@
   color: var(--text-secondary);
   line-height: 1.5;
   margin: 0;
+  transition: color 0.2s;
+}
+
+.activity-item-new:hover .activity-text {
+  color: var(--text-primary);
 }
 
 .activity-time {
@@ -487,9 +584,10 @@
   display: block;
 }
 
-/* ===== Quick Stats Card ===== */
+/* ===== Quick Stats Card v2 ===== */
 .quick-stats-card {
   padding: 24px;
+  animation: fadeInUp 0.4s ease-out 0.6s both;
 }
 
 .quick-stats-list {
@@ -507,12 +605,13 @@
   background: var(--bg-tertiary);
   border-radius: var(--radius);
   border: 1px solid var(--border-subtle);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
 }
 
 .quick-stat-item:hover {
   border-color: var(--stat-color, var(--primary));
-  transform: translateX(6px);
+  transform: translateX(6px) scale(1.02);
   box-shadow: 0 0 15px var(--stat-glow, var(--primary-ghost));
 }
 
@@ -526,6 +625,12 @@
   font-size: 1.2rem;
   background: var(--bg-card);
   border: 1px solid var(--stat-color, var(--border-light));
+  transition: all 0.3s;
+}
+
+.quick-stat-item:hover .quick-stat-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 15px var(--stat-glow, var(--primary-ghost));
 }
 
 .quick-stat-info {
@@ -543,11 +648,17 @@
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
+  transition: color 0.3s;
 }
 
-/* ===== Projects Section ===== */
+.quick-stat-item:hover .quick-stat-value {
+  color: var(--stat-color, var(--primary));
+}
+
+/* ===== Projects Section v2 ===== */
 .projects-section {
   padding: 28px;
+  animation: fadeInUp 0.4s ease-out 0.7s both;
 }
 
 .projects-header {
@@ -571,6 +682,7 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .project-card::before {
@@ -596,6 +708,10 @@
   border-color: var(--project-color, var(--primary));
 }
 
+.project-card:active {
+  transform: translateY(-2px);
+}
+
 .project-header {
   display: flex;
   justify-content: space-between;
@@ -614,6 +730,11 @@
   font-weight: 700;
   font-size: 1.1rem;
   box-shadow: 0 0 15px var(--project-glow, var(--primary-glow));
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.project-card:hover .project-avatar {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .project-name {
@@ -621,6 +742,11 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 4px 0;
+  transition: color 0.3s;
+}
+
+.project-card:hover .project-name {
+  color: var(--project-color, var(--primary));
 }
 
 .project-department {
@@ -644,6 +770,28 @@
 .progress-value {
   font-weight: 600;
   color: var(--primary);
+  transition: color 0.3s;
+}
+
+.project-card:hover .progress-value {
+  color: var(--project-color, var(--primary));
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+
+.project-card:hover .progress-fill {
+  box-shadow: 0 0 10px var(--project-color, var(--primary));
 }
 
 .project-footer {
@@ -658,11 +806,47 @@
   gap: 6px;
   font-size: 0.75rem;
   color: var(--text-muted);
+  transition: color 0.2s;
 }
 
-/* ===== Tasks Section ===== */
+.project-card:hover .project-dates {
+  color: var(--text-secondary);
+}
+
+.avatar-group {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bg-primary);
+  border: 3px solid var(--bg-card);
+  margin-left: -10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar:hover {
+  transform: scale(1.2) translateY(-4px);
+  z-index: 10;
+}
+
+/* ===== Tasks Section v2 ===== */
 .tasks-section {
   padding: 28px;
+  animation: fadeInUp 0.4s ease-out 0.8s both;
 }
 
 .table-responsive {
@@ -683,6 +867,11 @@
 .task-title {
   font-weight: 600;
   color: var(--text-primary);
+  transition: color 0.2s;
+}
+
+tbody tr:hover .task-title {
+  color: var(--primary);
 }
 
 .task-desc {
@@ -696,17 +885,24 @@
   gap: 10px;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+tbody tr:hover .project-badge {
+  color: var(--text-primary);
 }
 
 .project-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  animation: pulse 2s infinite;
 }
 
 .due-date {
   font-size: 0.85rem;
   color: var(--text-secondary);
+  transition: color 0.2s;
 }
 
 .due-date.overdue {
@@ -714,7 +910,7 @@
   font-weight: 500;
 }
 
-/* ===== Welcome Banner ===== */
+/* ===== Welcome Banner v2 ===== */
 .Welcome-banner {
   background: linear-gradient(135deg, rgba(0, 245, 212, 0.1) 0%, rgba(191, 90, 242, 0.1) 100%);
   border-radius: var(--radius-xl);
@@ -723,6 +919,7 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border-light);
+  animation: fadeInUp 0.4s ease-out;
 }
 
 .Welcome-banner::before {
@@ -735,6 +932,11 @@
   background: linear-gradient(135deg, var(--primary), transparent);
   opacity: 0.1;
   border-radius: 50%;
+  transition: transform 0.5s ease;
+}
+
+.Welcome-banner:hover::before {
+  transform: scale(1.1) rotate(10deg);
 }
 
 .Welcome-banner::after {
@@ -747,6 +949,11 @@
   background: linear-gradient(135deg, var(--secondary), transparent);
   opacity: 0.1;
   border-radius: 50%;
+  transition: transform 0.5s ease;
+}
+
+.Welcome-banner:hover::after {
+  transform: scale(1.2) rotate(-10deg);
 }
 
 .Welcome-content {
@@ -770,7 +977,7 @@
   margin: 0;
 }
 
-/* ===== Responsive ===== */
+/* ===== Responsive v2 ===== */
 @media (max-width: 1400px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
