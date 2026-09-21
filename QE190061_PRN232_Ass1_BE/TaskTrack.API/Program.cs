@@ -124,8 +124,11 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "TaskTrack API v1");
-    c.RoutePrefix = string.Empty; // Set Swagger UI at the application's root
+    c.RoutePrefix = "swagger"; // Available at /swagger
 });
+
+// Redirect root / to /swagger for easy access
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.UseCors("AllowAll");
 
@@ -134,3 +137,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
