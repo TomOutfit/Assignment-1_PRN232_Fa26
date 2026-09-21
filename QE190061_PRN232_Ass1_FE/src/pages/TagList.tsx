@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 import { tagApi } from '../services/api';
 import type { Tag, CreateTagDto, UpdateTagDto } from '../types';
+import './TagList.css';
+
+const TAG_COLORS = [
+  '#667eea', '#22c55e', '#f97316', '#3b82f6',
+  '#ec4899', '#06b6d4', '#f59e0b', '#8b5cf6',
+  '#14b8a6', '#f43f5e', '#a855f7', '#64748b'
+];
 
 export default function TagList() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<CreateTagDto>({ tagName: '', color: '#6c5ce7' });
+  const [form, setForm] = useState<CreateTagDto>({ tagName: '', color: '#667eea' });
   const [error, setError] = useState('');
 
   const fetchTags = async () => {
@@ -28,10 +35,10 @@ export default function TagList() {
   const openModal = (tag?: Tag) => {
     if (tag) {
       setEditingId(tag.tagId);
-      setForm({ tagName: tag.tagName, color: tag.color || '#6c5ce7' });
+      setForm({ tagName: tag.tagName, color: tag.color || '#667eea' });
     } else {
       setEditingId(null);
-      setForm({ tagName: '', color: '#6c5ce7' });
+      setForm({ tagName: '', color: '#667eea' });
     }
     setError('');
     setShowModal(true);
@@ -66,88 +73,108 @@ export default function TagList() {
     }
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="tag-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading tags...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="tag-list-page">
       <div className="page-header">
-        <h2>Tags</h2>
-        <button className="btn btn-primary" onClick={() => openModal()}>+ Add Tag</button>
+        <div className="header-content">
+          <h2>Tags</h2>
+          <p className="page-subtitle">Organize tasks with colorful tags</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => openModal()}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Tag
+        </button>
       </div>
 
       {/* Tags Grid */}
       {tags.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">🏷️</div>
+        <div className="empty-state">
+          <div className="empty-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+          </div>
           <h3>No tags found</h3>
           <p>Create a new tag to organize your tasks</p>
-          <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => openModal()}>
-            + Add Tag
+          <button className="btn btn-primary" onClick={() => openModal()}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Tag
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+        <div className="tags-grid">
           {tags.map(tag => (
-            <div key={tag.tagId} className="card" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '20px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  backgroundColor: tag.color || '#6c5ce7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 4px 12px ${tag.color || '#6c5ce7'}40`
-                }}>
-                  <span style={{ fontSize: '1.2rem' }}>🏷️</span>
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, color: '#2d3436', fontSize: '1rem' }}>
-                    {tag.tagName}
+            <div key={tag.tagId} className="tag-card">
+              <div className="tag-color-preview" style={{ backgroundColor: tag.color || '#667eea' }} />
+              <div className="tag-content">
+                <div className="tag-info">
+                  <div 
+                    className="tag-icon"
+                    style={{ backgroundColor: `${tag.color || '#667eea'}20` }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={tag.color || '#667eea'} strokeWidth="2">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                      <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#a0a0a0', marginTop: '4px' }}>
-                    {tag.color || '#6c5ce7'}
+                  <div>
+                    <h3 className="tag-name">{tag.tagName}</h3>
+                    <span className="tag-color-code">{tag.color || '#667eea'}</span>
                   </div>
                 </div>
+                <div className="tag-actions">
+                  <button className="action-btn" onClick={() => openModal(tag)} title="Edit">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                  <button className="action-btn delete" onClick={() => handleDelete(tag.tagId)} title="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="actions">
-                <button className="btn btn-secondary btn-sm" onClick={() => openModal(tag)}>Edit</button>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(tag.tagId)}>Delete</button>
-              </div>
+              <span 
+                className="tag-preview-badge"
+                style={{ backgroundColor: tag.color || '#667eea' }}
+              >
+                {tag.tagName}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Quick Color Picker */}
-      <div className="card" style={{ marginTop: '24px' }}>
+      {/* Color Palette */}
+      <div className="card color-palette-card">
         <div className="card-header">
-          <div className="card-title">🎨 Available Colors</div>
+          <h3 className="card-title">Available Colors</h3>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '8px' }}>
-          {[
-            '#6c5ce7', '#a29bfe', '#00b894', '#55efc4', 
-            '#e17055', '#fab1a0', '#0984e3', '#74b9ff',
-            '#fdcb6e', '#ffeaa7', '#e84393', '#fd79a8',
-            '#00cec9', '#81ecec', '#636e72', '#b2bec3'
-          ].map(color => (
+        <div className="color-palette">
+          {TAG_COLORS.map(color => (
             <div 
               key={color}
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: color,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: `0 2px 8px ${color}40`
-              }}
+              className="color-swatch"
+              style={{ backgroundColor: color }}
               title={color}
             />
           ))}
@@ -157,125 +184,95 @@ export default function TagList() {
       {/* Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingId ? '✏️ Edit Tag' : '➕ Add Tag'}</h3>
-              <button 
-                onClick={() => setShowModal(false)} 
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  fontSize: '1.5rem', 
-                  cursor: 'pointer',
-                  color: '#636e72'
-                }}
-              >
-                ×
+              <div className="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+                <h3>{editingId ? 'Edit Tag' : 'Create New Tag'}</h3>
+              </div>
+              <button onClick={() => setShowModal(false)} className="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
               </button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && (
-                  <div style={{ 
-                    background: 'rgba(231, 76, 60, 0.1)', 
-                    color: '#e74c3c', 
-                    padding: '12px', 
-                    borderRadius: '8px',
-                    marginBottom: '16px'
-                  }}>
+                  <div className="error-message">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
                     {error}
                   </div>
                 )}
+                
                 <div className="form-group">
-                  <label>Tag Name *</label>
+                  <label>Tag Name</label>
                   <input
                     type="text"
                     value={form.tagName}
                     onChange={e => setForm({ ...form, tagName: e.target.value })}
                     placeholder="Enter tag name"
+                    className="form-input"
                   />
                 </div>
+                
                 <div className="form-group">
                   <label>Color</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div className="color-input-wrapper">
                     <input
                       type="color"
-                      value={form.color || '#6c5ce7'}
+                      value={form.color}
                       onChange={e => setForm({ ...form, color: e.target.value })}
-                      style={{ 
-                        width: '60px', 
-                        height: '50px', 
-                        padding: '4px', 
-                        border: '2px solid #f1f3f4', 
-                        borderRadius: '10px',
-                        cursor: 'pointer'
-                      }}
+                      className="color-picker"
                     />
-                    <span style={{ color: '#636e72', fontSize: '0.9rem', fontFamily: 'monospace' }}>
-                      {form.color}
-                    </span>
+                    <span className="color-code">{form.color}</span>
                   </div>
                 </div>
                 
-                {/* Quick Colors */}
                 <div className="form-group">
                   <label>Quick Colors</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
-                    {[
-                      '#6c5ce7', '#00b894', '#e17055', '#0984e3',
-                      '#fdcb6e', '#e84393', '#00cec9', '#636e72'
-                    ].map(color => (
+                  <div className="quick-colors">
+                    {TAG_COLORS.map(color => (
                       <button
                         key={color}
                         type="button"
                         onClick={() => setForm({ ...form, color })}
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '8px',
-                          border: `3px solid ${form.color === color ? '#2d3436' : 'transparent'}`,
-                          backgroundColor: color,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
+                        className={`quick-color-btn ${form.color === color ? 'active' : ''}`}
+                        style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>
                 </div>
                 
                 {/* Preview */}
-                <div style={{ 
-                  marginTop: '20px', 
-                  padding: '16px',
-                  background: '#f8f9fa',
-                  borderRadius: '12px',
-                  textAlign: 'center'
-                }}>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '12px', 
-                    fontWeight: 600,
-                    color: '#636e72',
-                    fontSize: '0.85rem'
-                  }}>
-                    Preview
-                  </label>
-                  <span style={{
-                    padding: '8px 20px',
-                    borderRadius: '20px',
-                    backgroundColor: form.color || '#6c5ce7',
-                    color: 'white',
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    boxShadow: `0 4px 12px ${form.color || '#6c5ce7'}40`
-                  }}>
-                    {form.tagName || 'Tag Name'}
-                  </span>
+                <div className="tag-preview-section">
+                  <label>Preview</label>
+                  <div className="preview-container">
+                    <span 
+                      className="tag-preview"
+                      style={{ 
+                        backgroundColor: form.color,
+                        boxShadow: `0 4px 12px ${form.color}40`
+                      }}
+                    >
+                      {form.tagName || 'Tag Name'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editingId ? 'Update' : 'Create'}</button>
+                <button type="submit" className="btn btn-primary">
+                  {editingId ? 'Update Tag' : 'Create Tag'}
+                </button>
               </div>
             </form>
           </div>

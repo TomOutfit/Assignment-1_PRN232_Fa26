@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { departmentApi } from '../services/api';
 import type { Department, CreateDepartmentDto, UpdateDepartmentDto } from '../types';
+import './DepartmentList.css';
+
+const DEPARTMENT_COLORS = [
+  { bg: 'rgba(102, 126, 234, 0.1)', color: '#667eea', icon: 'building' },
+  { bg: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', icon: 'briefcase' },
+  { bg: 'rgba(249, 115, 22, 0.1)', color: '#f97316', icon: 'construction' },
+  { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', icon: 'science' },
+  { bg: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', icon: 'design' },
+  { bg: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4', icon: 'settings' },
+];
 
 export default function DepartmentList() {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -69,195 +79,182 @@ export default function DepartmentList() {
     }
   };
 
-  const getDepartmentIcon = (index: number): string => {
-    const icons = ['🏢', '💼', '🏗️', '🔬', '💻', '📊', '🎨', '⚙️'];
-    return icons[index % icons.length];
+  const getDepartmentStyle = (index: number) => {
+    return DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
   };
 
-  const getDepartmentColor = (index: number): string => {
-    const colors = ['#6c5ce7', '#00b894', '#e17055', '#0984e3', '#fdcb6e', '#00cec9', '#e84393', '#636e72'];
-    return colors[index % colors.length];
-  };
-
-  if (loading) return <div className="loading">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="department-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading departments...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="department-list-page">
       <div className="page-header">
-        <h2>Departments</h2>
-        <button className="btn btn-primary" onClick={() => openModal()}>+ Add Department</button>
+        <div className="header-content">
+          <h2>Departments</h2>
+          <p className="page-subtitle">Organize your teams by department</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => openModal()}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Department
+        </button>
       </div>
 
       {/* Search Bar */}
-      <div className="card" style={{ marginBottom: '24px', padding: '20px' }}>
-        <div style={{ position: 'relative', maxWidth: '400px' }}>
-          <span style={{ 
-            position: 'absolute', 
-            left: '16px', 
-            top: '50%', 
-            transform: 'translateY(-50%)',
-            fontSize: '1rem'
-          }}>
-            🔍
-          </span>
+      <div className="search-card">
+        <div className="search-input-wrapper">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
           <input
             type="text"
             placeholder="Search departments..."
             value={searchName}
             onChange={e => setSearchName(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px 16px 12px 48px',
-              border: '2px solid #f1f3f4',
-              borderRadius: '10px',
-              fontSize: '0.95rem',
-              transition: 'all 0.2s'
-            }}
+            className="search-input"
           />
         </div>
       </div>
 
       {/* Departments Grid */}
       {departments.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">🏢</div>
+        <div className="empty-state">
+          <div className="empty-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
           <h3>No departments found</h3>
           <p>Create a new department to get started</p>
-          <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => openModal()}>
-            + Add Department
+          <button className="btn btn-primary" onClick={() => openModal()}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Department
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-          {departments.map((dept, index) => (
-            <div key={dept.departmentId} className="card" style={{ position: 'relative', overflow: 'hidden' }}>
-              {/* Color accent */}
-              <div style={{ 
-                position: 'absolute', 
-                top: 0, 
-                left: 0, 
-                width: '4px', 
-                height: '100%',
-                background: getDepartmentColor(index)
-              }} />
-              
-              <div style={{ paddingLeft: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      background: `${getDepartmentColor(index)}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.5rem'
-                    }}>
-                      {getDepartmentIcon(index)}
+        <div className="departments-grid">
+          {departments.map((dept, index) => {
+            const style = getDepartmentStyle(index);
+            return (
+              <div key={dept.departmentId} className="department-card">
+                <div 
+                  className="department-accent"
+                  style={{ backgroundColor: style.color }}
+                />
+                
+                <div className="department-content">
+                  <div className="department-header">
+                    <div 
+                      className="department-icon"
+                      style={{ backgroundColor: style.bg }}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={style.color} strokeWidth="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                      </svg>
                     </div>
-                    <div>
-                      <h3 style={{ margin: 0, color: '#2d3436', fontSize: '1.1rem' }}>
-                        {dept.departmentName}
-                      </h3>
-                      <span style={{ 
-                        fontSize: '0.75rem', 
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        color: dept.isActive ? '#00b894' : '#636e72'
-                      }}>
-                        {dept.isActive ? '● Active' : '○ Inactive'}
+                    <div className="department-status">
+                      <span className={`status-indicator ${dept.isActive ? 'active' : 'inactive'}`}>
+                        {dept.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </div>
-                </div>
-                
-                {dept.departmentDescription && (
-                  <p style={{ 
-                    color: '#636e72', 
-                    fontSize: '0.9rem', 
-                    margin: '0 0 16px 0', 
-                    lineHeight: '1.6',
-                    minHeight: '44px'
-                  }}>
-                    {dept.departmentDescription.length > 80 
-                      ? dept.departmentDescription.substring(0, 80) + '...' 
-                      : dept.departmentDescription}
-                  </p>
-                )}
-                
-                {/* Stats */}
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '24px', 
-                  padding: '12px 0',
-                  borderTop: '1px solid #f1f3f4',
-                  marginBottom: '16px'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#2d3436' }}>
-                      {dept.projects?.length || 0}
+                  
+                  <h3 className="department-name">{dept.departmentName}</h3>
+                  
+                  {dept.departmentDescription && (
+                    <p className="department-description">{dept.departmentDescription}</p>
+                  )}
+                  
+                  <div className="department-stats">
+                    <div className="stat-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="3" y1="9" x2="21" y2="9"/>
+                      </svg>
+                      <span><strong>{dept.projects?.length || 0}</strong> Projects</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#a0a0a0' }}>Projects</div>
+                  </div>
+                  
+                  <div className="department-actions">
+                    <button className="action-btn" onClick={() => openModal(dept)} title="Edit">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Edit
+                    </button>
+                    <button className="action-btn delete" onClick={() => handleDelete(dept.departmentId)} title="Delete">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                      Delete
+                    </button>
                   </div>
                 </div>
-                
-                <div className="actions">
-                  <button className="btn btn-secondary btn-sm" onClick={() => openModal(dept)}>
-                    ✏️ Edit
-                  </button>
-                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(dept.departmentId)}>
-                    🗑️ Delete
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingId ? '✏️ Edit Department' : '➕ Add Department'}</h3>
-              <button 
-                onClick={() => setShowModal(false)} 
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  fontSize: '1.5rem', 
-                  cursor: 'pointer',
-                  color: '#636e72'
-                }}
-              >
-                ×
+              <div className="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <h3>{editingId ? 'Edit Department' : 'Create New Department'}</h3>
+              </div>
+              <button onClick={() => setShowModal(false)} className="modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
               </button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {error && (
-                  <div style={{ 
-                    background: 'rgba(231, 76, 60, 0.1)', 
-                    color: '#e74c3c', 
-                    padding: '12px', 
-                    borderRadius: '8px',
-                    marginBottom: '16px'
-                  }}>
+                  <div className="error-message">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
                     {error}
                   </div>
                 )}
+                
                 <div className="form-group">
-                  <label>Department Name *</label>
+                  <label>Department Name</label>
                   <input
                     type="text"
                     value={form.departmentName}
                     onChange={e => setForm({ ...form, departmentName: e.target.value })}
                     placeholder="Enter department name"
+                    className="form-input"
                   />
                 </div>
+                
                 <div className="form-group">
                   <label>Description</label>
                   <textarea
@@ -265,13 +262,15 @@ export default function DepartmentList() {
                     onChange={e => setForm({ ...form, departmentDescription: e.target.value })}
                     placeholder="Enter description"
                     rows={4}
-                    style={{ resize: 'vertical' }}
+                    className="form-textarea"
                   />
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editingId ? 'Update' : 'Create'}</button>
+                <button type="submit" className="btn btn-primary">
+                  {editingId ? 'Update Department' : 'Create Department'}
+                </button>
               </div>
             </form>
           </div>
