@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/QE190061_PRN232_Ass1_BE/">
+    <Project Path="QE190061_PRN232_Ass1_BE/TaskTrack.API/TaskTrack.API.csproj" />
+    <Project Path="QE190061_PRN232_Ass1_BE/TaskTrack.Repo/TaskTrack.Repo.csproj" />
+    <Project Path="QE190061_PRN232_Ass1_BE/TaskTrack.Service/TaskTrack.Service.csproj" />
+  </Folder>
+</Solution>
