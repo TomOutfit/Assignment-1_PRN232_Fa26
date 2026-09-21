@@ -31,3 +31,9 @@ node_modules/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Documents, Database Scripts & Duplicate Solution Files
+*.doc
+*.docx
+*.sql
+*.slnx
