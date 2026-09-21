@@ -171,6 +171,55 @@ export default function TaskList() {
         <button className="btn btn-primary" onClick={() => openModal()}>+ Add Task</button>
       </div>
 
+      {/* Quick Status Filter Tabs */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        marginBottom: '16px', 
+        flexWrap: 'wrap',
+        alignItems: 'center'
+      }}>
+        <button
+          type="button"
+          onClick={() => setFilters({ ...filters, status: '' })}
+          className={`btn btn-sm ${filters.status === '' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ borderRadius: '20px', padding: '6px 16px', fontWeight: 600 }}
+        >
+          All Tasks
+        </button>
+        {STATUS_OPTIONS.map(opt => {
+          const isActive = filters.status === opt.value;
+          const statusColors: Record<number, { bg: string; text: string; border: string }> = {
+            0: { bg: '#e0f2fe', text: '#0284c7', border: '#bae6fd' }, // To Do
+            1: { bg: '#fef3c7', text: '#d97706', border: '#fde68a' }, // In Progress
+            2: { bg: '#dcfce7', text: '#16a34a', border: '#bbf7d0' }, // Done
+            3: { bg: '#f3f4f6', text: '#6b7280', border: '#e5e7eb' }, // Cancelled
+          };
+          const styleConfig = statusColors[opt.value];
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setFilters({ ...filters, status: isActive ? '' : opt.value })}
+              style={{
+                borderRadius: '20px',
+                padding: '6px 16px',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                border: `1.5px solid ${isActive ? styleConfig.text : styleConfig.border}`,
+                backgroundColor: isActive ? styleConfig.text : styleConfig.bg,
+                color: isActive ? '#ffffff' : styleConfig.text,
+                boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filter Bar */}
       <div className="card" style={{ marginBottom: '24px', padding: '20px' }}>
         <div className="search-bar">

@@ -33,13 +33,14 @@ export const departmentApi = {
 
 // ==================== PROJECTS ====================
 export const projectApi = {
-  getAll: (params?: { name?: string; status?: number; departmentId?: number }) => {
+  getAll: (params?: { name?: string; status?: number | ''; departmentId?: number | '' }) => {
     const searchParams = new URLSearchParams();
     if (params?.name) searchParams.append('name', params.name);
-    if (params?.status !== undefined) searchParams.append('status', String(params.status));
-    if (params?.departmentId !== undefined) searchParams.append('departmentId', String(params.departmentId));
+    if (params?.status !== undefined && params?.status !== '') searchParams.append('status', String(params.status));
+    if (params?.departmentId !== undefined && params?.departmentId !== '') searchParams.append('departmentId', String(params.departmentId));
     const query = searchParams.toString();
-    return api.get<Project[]>(`/projects${query ? '?' + query : ''}`).then(r => r.data);
+    const endpoint = query ? `/projects/search?${query}` : '/projects';
+    return api.get<Project[]>(endpoint).then(r => r.data);
   },
   getById: (id: number) => api.get<Project>(`/projects/${id}`).then(r => r.data),
   getByDepartmentId: (departmentId: number) => api.get<Project[]>(`/projects/department/${departmentId}`).then(r => r.data),
@@ -50,15 +51,16 @@ export const projectApi = {
 
 // ==================== TASKS ====================
 export const taskApi = {
-  getAll: (params?: { title?: string; status?: number; priority?: number; projectId?: number; tagId?: number }) => {
+  getAll: (params?: { title?: string; status?: number | ''; priority?: number | ''; projectId?: number | ''; tagId?: number | '' }) => {
     const searchParams = new URLSearchParams();
     if (params?.title) searchParams.append('title', params.title);
-    if (params?.status !== undefined) searchParams.append('status', String(params.status));
-    if (params?.priority !== undefined) searchParams.append('priority', String(params.priority));
-    if (params?.projectId !== undefined) searchParams.append('projectId', String(params.projectId));
-    if (params?.tagId !== undefined) searchParams.append('tagId', String(params.tagId));
+    if (params?.status !== undefined && params?.status !== '') searchParams.append('status', String(params.status));
+    if (params?.priority !== undefined && params?.priority !== '') searchParams.append('priority', String(params.priority));
+    if (params?.projectId !== undefined && params?.projectId !== '') searchParams.append('projectId', String(params.projectId));
+    if (params?.tagId !== undefined && params?.tagId !== '') searchParams.append('tagId', String(params.tagId));
     const query = searchParams.toString();
-    return api.get<Task[]>(`/tasks${query ? '?' + query : ''}`).then(r => r.data);
+    const endpoint = query ? `/tasks/search?${query}` : '/tasks';
+    return api.get<Task[]>(endpoint).then(r => r.data);
   },
   getById: (id: number) => api.get<Task>(`/tasks/${id}`).then(r => r.data),
   getByProjectId: (projectId: number) => api.get<Task[]>(`/tasks/project/${projectId}`).then(r => r.data),
