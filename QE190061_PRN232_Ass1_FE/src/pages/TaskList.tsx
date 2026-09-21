@@ -143,13 +143,23 @@ export default function TaskList() {
   };
 
   const getStatusBadge = (status: number) => {
-    const badges = ['badge-secondary', 'badge-info', 'badge-success', 'badge-danger'];
-    return <span className={`badge ${badges[status]}`}>{STATUS_OPTIONS[status].label}</span>;
+    const classes = ['badge-to-do', 'badge-in-progress', 'badge-done', 'badge-cancelled'];
+    return <span className={`badge ${classes[status]}`}>{STATUS_OPTIONS[status].label}</span>;
   };
 
   const getPriorityBadge = (priority: number) => {
-    const badges = ['badge-secondary', 'badge-warning', 'badge-danger', 'badge-danger'];
-    return <span className={`badge ${badges[priority]}`}>{PRIORITY_OPTIONS[priority].label}</span>;
+    const classes = ['badge-low', 'badge-medium', 'badge-high', 'badge-critical'];
+    return <span className={`badge ${classes[priority]}`}>{PRIORITY_OPTIONS[priority].label}</span>;
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      title: '',
+      status: '',
+      priority: '',
+      projectId: '',
+      tagId: '',
+    });
   };
 
   if (loading) return <div className="loading">Loading...</div>;
@@ -161,36 +171,55 @@ export default function TaskList() {
         <button className="btn btn-primary" onClick={() => openModal()}>+ Add Task</button>
       </div>
 
-      <div className="search-bar" style={{ flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search by title..."
-          value={filters.title}
-          onChange={e => setFilters({ ...filters, title: e.target.value })}
-          style={{ flexBasis: '200px' }}
-        />
-        <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value ? Number(e.target.value) : '' })}>
-          <option value="">All Status</option>
-          {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-        <select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value ? Number(e.target.value) : '' })}>
-          <option value="">All Priority</option>
-          {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-        <select value={filters.projectId} onChange={e => setFilters({ ...filters, projectId: e.target.value ? Number(e.target.value) : '' })}>
-          <option value="">All Projects</option>
-          {projects.map(p => <option key={p.projectId} value={p.projectId}>{p.projectName}</option>)}
-        </select>
+      {/* Filter Bar */}
+      <div className="card" style={{ marginBottom: '24px', padding: '20px' }}>
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="🔍 Search by title..."
+            value={filters.title}
+            onChange={e => setFilters({ ...filters, title: e.target.value })}
+          />
+          <select 
+            value={filters.status} 
+            onChange={e => setFilters({ ...filters, status: e.target.value ? Number(e.target.value) : '' })}
+          >
+            <option value="">All Status</option>
+            {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          <select 
+            value={filters.priority} 
+            onChange={e => setFilters({ ...filters, priority: e.target.value ? Number(e.target.value) : '' })}
+          >
+            <option value="">All Priority</option>
+            {PRIORITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          <select 
+            value={filters.projectId} 
+            onChange={e => setFilters({ ...filters, projectId: e.target.value ? Number(e.target.value) : '' })}
+          >
+            <option value="">All Projects</option>
+            {projects.map(p => <option key={p.projectId} value={p.projectId}>{p.projectName}</option>)}
+          </select>
+          <button className="btn btn-secondary" onClick={clearFilters}>Clear</button>
+        </div>
       </div>
 
+      {/* Tasks Table */}
       {tasks.length === 0 ? (
-        <div className="empty">No tasks found</div>
+        <div className="empty">
+          <div className="empty-icon">📋</div>
+          <h3>No tasks found</h3>
+          <p>Create a new task to get started</p>
+          <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => openModal()}>
+            + Add Task
+          </button>
+        </div>
       ) : (
         <div className="table-container">
           <table>
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Title</th>
                 <th>Project</th>
                 <th>Priority</th>
@@ -203,24 +232,59 @@ export default function TaskList() {
             <tbody>
               {tasks.map(task => (
                 <tr key={task.taskId}>
-                  <td>{task.taskId}</td>
-                  <td>{task.title}</td>
-                  <td>{task.projectName}</td>
+                  <td>
+                    <div style={{ fontWeight: 600, color: '#2d3436' }}>{task.title}</div>
+                    {task.description && (
+                      <div style={{ fontSize: '0.8rem', color: '#a0a0a0', marginTop: '4px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {task.description}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '8px', 
+                        height: '8px', 
+                        borderRadius: '50%', 
+                        background: '#6c5ce7',
+                        display: 'inline-block'
+                      }} />
+                      {task.projectName}
+                    </div>
+                  </td>
                   <td>{getPriorityBadge(task.priority)}</td>
                   <td>{getStatusBadge(task.status)}</td>
-                  <td>{task.dueDate || '-'}</td>
+                  <td>
+                    {task.dueDate ? (
+                      <span style={{ color: '#636e72', fontSize: '0.9rem' }}>
+                        {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#a0a0a0' }}>-</span>
+                    )}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       {task.tags?.map(tag => (
-                        <span key={tag.tagId} className="badge badge-info" style={{ fontSize: '0.7rem' }}>
+                        <span 
+                          key={tag.tagId} 
+                          className="tag"
+                          style={{ 
+                            background: `${tag.color}20`,
+                            color: tag.color || '#6c5ce7',
+                            border: `1px solid ${tag.color}40`
+                          }}
+                        >
                           {tag.tagName}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="actions">
-                    <button className="btn btn-secondary btn-sm" onClick={() => openModal(task)}>Edit</button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(task.taskId)}>Delete</button>
+                  <td>
+                    <div className="actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => openModal(task)}>Edit</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDelete(task.taskId)}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -229,16 +293,38 @@ export default function TaskList() {
         </div>
       )}
 
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingId ? 'Edit Task' : 'Add Task'}</h3>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+              <h3>{editingId ? '✏️ Edit Task' : '➕ Add Task'}</h3>
+              <button 
+                onClick={() => setShowModal(false)} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  fontSize: '1.5rem', 
+                  cursor: 'pointer',
+                  color: '#636e72'
+                }}
+              >
+                ×
+              </button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
-                {error && <div style={{ color: '#e74c3c', marginBottom: '16px' }}>{error}</div>}
+                {error && (
+                  <div style={{ 
+                    background: 'rgba(231, 76, 60, 0.1)', 
+                    color: '#e74c3c', 
+                    padding: '12px', 
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }}>
+                    {error}
+                  </div>
+                )}
                 <div className="form-group">
                   <label>Title *</label>
                   <input
@@ -265,6 +351,7 @@ export default function TaskList() {
                     onChange={e => setForm({ ...form, description: e.target.value })}
                     placeholder="Enter description"
                     rows={3}
+                    style={{ resize: 'vertical' }}
                   />
                 </div>
                 <div className="grid grid-2">
@@ -297,25 +384,38 @@ export default function TaskList() {
                 </div>
                 <div className="form-group">
                   <label>Tags</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: '8px', 
+                    marginTop: '8px',
+                    padding: '12px',
+                    background: '#f8f9fa',
+                    borderRadius: '10px'
+                  }}>
                     {tags.map(tag => (
                       <button
                         key={tag.tagId}
                         type="button"
                         onClick={() => toggleTag(tag.tagId)}
                         style={{
-                          padding: '6px 12px',
+                          padding: '8px 16px',
                           borderRadius: '20px',
-                          border: `2px solid ${(form.tagIds || []).includes(tag.tagId) ? '#3498db' : '#dde1e6'}`,
-                          background: (form.tagIds || []).includes(tag.tagId) ? '#3498db' : 'white',
-                          color: (form.tagIds || []).includes(tag.tagId) ? 'white' : '#2c3e50',
+                          border: `2px solid ${(form.tagIds || []).includes(tag.tagId) ? (tag.color || '#6c5ce7') : '#dfe6e9'}`,
+                          background: (form.tagIds || []).includes(tag.tagId) ? (tag.color || '#6c5ce7') : 'white',
+                          color: (form.tagIds || []).includes(tag.tagId) ? 'white' : '#2d3436',
                           cursor: 'pointer',
                           fontSize: '0.85rem',
+                          fontWeight: 500,
+                          transition: 'all 0.2s'
                         }}
                       >
                         {tag.tagName}
                       </button>
                     ))}
+                    {tags.length === 0 && (
+                      <span style={{ color: '#a0a0a0', fontSize: '0.85rem' }}>No tags available</span>
+                    )}
                   </div>
                 </div>
               </div>

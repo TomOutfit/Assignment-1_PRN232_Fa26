@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Layout.css';
 
@@ -6,6 +7,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const location = useLocation();
 
   const navItems = [
@@ -18,10 +20,21 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="layout">
-      <aside className="sidebar">
+      {/* Sidebar */}
+      <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
         <div className="sidebar-header">
-          <h1>📋 TaskTrack</h1>
+          <div className="sidebar-logo">📋</div>
+          <span className="sidebar-title">TaskTrack</span>
         </div>
+        
+        <button 
+          className="sidebar-toggle" 
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          ◀
+        </button>
+        
         <nav className="sidebar-nav">
           {navItems.map(item => (
             <Link
@@ -35,9 +48,38 @@ export default function Layout({ children }: LayoutProps) {
           ))}
         </nav>
       </aside>
-      <main className="main-content">
-        {children}
-      </main>
+
+      {/* Main Wrapper */}
+      <div className={`main-wrapper ${isExpanded ? 'sidebar-expanded' : ''}`}>
+        {/* Top Header */}
+        <header className="top-header">
+          <div className="header-left">
+            <h1 className="header-title">Task Management</h1>
+          </div>
+          
+          <div className="header-right">
+            <div className="header-search">
+              <span className="header-search-icon">🔍</span>
+              <input type="text" placeholder="Search tasks, projects..." />
+            </div>
+            
+            <button className="header-icon-btn" aria-label="Notifications">
+              🔔
+              <span className="notification-badge"></span>
+            </button>
+            
+            <div className="user-profile">
+              <div className="user-avatar">A</div>
+              <span className="user-name">Admin</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="main-content">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
