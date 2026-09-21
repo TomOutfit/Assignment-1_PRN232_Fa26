@@ -1,4 +1,4 @@
-/* ===== Fresh Department List Page Styles ===== */
+/* ===== Neo Dark Department List Page Styles ===== */
 .department-list-page {
   display: flex;
   flex-direction: column;
@@ -12,7 +12,7 @@
   justify-content: center;
   min-height: 400px;
   gap: 20px;
-  color: var(--gray-500);
+  color: var(--text-muted);
 }
 
 /* ===== Page Header ===== */
@@ -25,22 +25,23 @@
 .header-content h2 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--gray-900);
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.9rem;
-  color: var(--gray-500);
+  color: var(--text-muted);
   margin: 0;
 }
 
 /* ===== Search Card ===== */
 .search-card {
-  background: white;
-  border-radius: 20px;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-subtle);
 }
 
 .search-input-wrapper {
@@ -53,7 +54,7 @@
 .search-input-wrapper svg {
   position: absolute;
   left: 16px;
-  color: var(--gray-400);
+  color: var(--text-dim);
   transition: color 0.2s;
 }
 
@@ -64,50 +65,51 @@
 .search-input {
   width: 100%;
   padding: 14px 16px 14px 48px;
-  border: 2px solid var(--gray-200);
-  border-radius: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
   font-size: 0.95rem;
   transition: all 0.3s;
-  background: var(--gray-50);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--primary);
-  background: white;
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-ghost);
 }
 
 /* ===== Empty State ===== */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-subtle);
 }
 
 .empty-icon {
   width: 88px;
   height: 88px;
   margin: 0 auto 20px;
-  background: var(--gray-100);
+  background: var(--bg-tertiary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gray-400);
+  color: var(--text-dim);
   font-size: 2rem;
 }
 
 .empty-state h3 {
   font-size: 1.25rem;
-  color: var(--gray-900);
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .empty-state p {
-  color: var(--gray-500);
+  color: var(--text-muted);
   margin-bottom: 24px;
 }
 
@@ -119,23 +121,40 @@
 }
 
 .department-card {
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.department-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--dept-color, var(--primary));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.department-card:hover::before {
+  opacity: 1;
 }
 
 .department-card:hover {
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md), 0 0 30px var(--dept-glow, var(--primary-ghost));
   transform: translateY(-6px);
-  border-color: var(--primary-ghost);
+  border-color: var(--dept-color, var(--primary));
 }
 
 .department-accent {
-  width: 6px;
+  width: 4px;
   flex-shrink: 0;
 }
 
@@ -156,10 +175,12 @@
 .department-icon {
   width: 60px;
   height: 60px;
-  border-radius: 16px;
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
 }
 
 .department-status {
@@ -169,31 +190,33 @@
 
 .status-indicator {
   padding: 8px 14px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 600;
 }
 
 .status-indicator.active {
-  background: var(--success-light);
-  color: var(--success);
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(48, 209, 88, 0.3);
 }
 
 .status-indicator.inactive {
-  background: var(--gray-100);
-  color: var(--gray-500);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
 }
 
 .department-name {
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--gray-900);
+  color: var(--text-primary);
   margin: 0;
 }
 
 .department-description {
   font-size: 0.95rem;
-  color: var(--gray-600);
+  color: var(--text-secondary);
   line-height: 1.7;
   margin: 0;
   display: -webkit-box;
@@ -206,8 +229,9 @@
   display: flex;
   gap: 24px;
   padding: 16px;
-  background: var(--gray-50);
-  border-radius: 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
 }
 
 .stat-item {
@@ -215,11 +239,11 @@
   align-items: center;
   gap: 10px;
   font-size: 0.9rem;
-  color: var(--gray-600);
+  color: var(--text-secondary);
 }
 
 .stat-item strong {
-  color: var(--gray-800);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -236,24 +260,28 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 18px;
-  border: none;
-  background: var(--gray-100);
-  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  color: var(--gray-600);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  color: var(--text-secondary);
+  transition: all 0.3s;
 }
 
 .action-btn:hover {
   background: var(--primary);
-  color: white;
+  color: var(--bg-primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 15px var(--primary-glow);
   transform: translateY(-2px);
 }
 
 .action-btn.delete:hover {
-  background: var(--danger);
+  background: var(--accent-red);
+  color: white;
+  border-color: var(--accent-red);
 }
 
 /* ===== Modal Styles ===== */
@@ -267,26 +295,27 @@
 .modal-title h3 {
   margin: 0;
   font-size: 1.25rem;
-  color: var(--gray-900);
+  color: var(--text-primary);
 }
 
 .modal-close {
   width: 40px;
   height: 40px;
-  border: none;
-  background: var(--gray-100);
-  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--gray-500);
+  color: var(--text-muted);
   transition: all 0.3s;
 }
 
 .modal-close:hover {
-  background: var(--danger);
+  background: var(--accent-red);
   color: white;
+  border-color: var(--accent-red);
   transform: rotate(90deg);
 }
 
@@ -295,22 +324,24 @@
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  background: var(--danger-light);
-  color: var(--danger);
-  border-radius: 14px;
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--accent-red);
+  border-radius: var(--radius);
   font-size: 0.9rem;
   margin-bottom: 24px;
+  border: 1px solid rgba(255, 69, 58, 0.3);
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
   padding: 14px 18px;
-  border: 2px solid var(--gray-200);
-  border-radius: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
   font-size: 0.95rem;
   transition: all 0.3s;
-  background: white;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   font-family: inherit;
 }
 
@@ -318,7 +349,7 @@
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-ghost);
 }
 
 .form-textarea {

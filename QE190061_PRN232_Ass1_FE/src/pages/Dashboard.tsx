@@ -54,13 +54,13 @@ export default function Dashboard() {
     return new Date(t.dueDate) < new Date() && t.status !== 2;
   }).length;
 
-  // Sample activities
+  // Sample activities - Neon colors
   const activities: Activity[] = [
-    { id: 1, type: 'update', text: 'Task "API Integration" marked as Done', time: '2 min ago', color: '#10b981' },
-    { id: 2, type: 'add', text: 'New task created: Testing Phase', time: '15 min ago', color: '#14b8a6' },
-    { id: 3, type: 'update', text: 'Project "Website Redesign" updated', time: '1 hour ago', color: '#f59e0b' },
-    { id: 4, type: 'add', text: 'New project added: Mobile App', time: '2 hours ago', color: '#14b8a6' },
-    { id: 5, type: 'delete', text: 'Task "Legacy Code" removed', time: '3 hours ago', color: '#ef4444' },
+    { id: 1, type: 'update', text: 'Task "API Integration" marked as Done', time: '2 min ago', color: '#30d158' },
+    { id: 2, type: 'add', text: 'New task created: Testing Phase', time: '15 min ago', color: '#00f5d4' },
+    { id: 3, type: 'update', text: 'Project "Website Redesign" updated', time: '1 hour ago', color: '#ff9500' },
+    { id: 4, type: 'add', text: 'New project added: Mobile App', time: '2 hours ago', color: '#bf5af2' },
+    { id: 5, type: 'delete', text: 'Task "Legacy Code" removed', time: '3 hours ago', color: '#ff453a' },
   ];
 
   const getStatusLabel = (status: number): string => {
@@ -101,9 +101,9 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Stats Cards */}
+      {/* Stats Cards - Neon Theme */}
       <div className="stats-grid">
-        <div className="stat-card-new gradient-teal">
+        <div className="stat-card-new gradient-cyan">
           <div className="stat-card-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -123,7 +123,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="stat-card-new gradient-emerald">
+        <div className="stat-card-new gradient-blue">
           <div className="stat-card-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
@@ -165,7 +165,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="stat-card-new gradient-rose">
+        <div className="stat-card-new gradient-pink">
           <div className="stat-card-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
@@ -256,24 +256,24 @@ export default function Dashboard() {
                 />
               </div>
               <div className="distribution-legend">
-                <div className="legend-item">
-                  <div className="legend-dot" style={{ background: '#10b981' }}></div>
+                <div className="legend-item" style={{ '--legend-color': '#30d158', '--legend-glow': 'rgba(48, 209, 88, 0.3)' } as React.CSSProperties}>
+                  <div className="legend-dot" style={{ background: '#30d158' }}></div>
                   <div className="legend-info">
                     <span className="legend-label">Completed</span>
                     <span className="legend-value">{completedTasks} tasks</span>
                   </div>
                   <span className="legend-percent">{tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0}%</span>
                 </div>
-                <div className="legend-item">
-                  <div className="legend-dot" style={{ background: '#14b8a6' }}></div>
+                <div className="legend-item" style={{ '--legend-color': '#00f5d4', '--legend-glow': 'rgba(0, 245, 212, 0.3)' } as React.CSSProperties}>
+                  <div className="legend-dot" style={{ background: '#00f5d4' }}></div>
                   <div className="legend-info">
                     <span className="legend-label">In Progress</span>
                     <span className="legend-value">{inProgressTasks} tasks</span>
                   </div>
                   <span className="legend-percent">{tasks.length > 0 ? Math.round((inProgressTasks / tasks.length) * 100) : 0}%</span>
                 </div>
-                <div className="legend-item">
-                  <div className="legend-dot" style={{ background: '#f59e0b' }}></div>
+                <div className="legend-item" style={{ '--legend-color': '#ff9500', '--legend-glow': 'rgba(255, 149, 0, 0.3)' } as React.CSSProperties}>
+                  <div className="legend-dot" style={{ background: '#ff9500' }}></div>
                   <div className="legend-info">
                     <span className="legend-label">Pending</span>
                     <span className="legend-value">{pendingTasks} tasks</span>
@@ -298,7 +298,7 @@ export default function Dashboard() {
                 <div key={activity.id} className="activity-item-new">
                   <div 
                     className="activity-dot"
-                    style={{ background: activity.color }}
+                    style={{ background: activity.color, '--activity-color': activity.color } as React.CSSProperties}
                   ></div>
                   <div className="activity-content">
                     <p className="activity-text">{activity.text}</p>
@@ -315,9 +315,9 @@ export default function Dashboard() {
               <h3 className="card-title">Quick Stats</h3>
             </div>
             <div className="quick-stats-list">
-              <div className="quick-stat-item">
-                <div className="quick-stat-icon teal">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="quick-stat-item" style={{ '--stat-color': '#00f5d4', '--stat-glow': 'rgba(0, 245, 212, 0.3)' } as React.CSSProperties}>
+                <div className="quick-stat-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00f5d4" strokeWidth="2">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                     <polyline points="22 4 12 14.01 9 11.01"/>
                   </svg>
@@ -327,9 +327,9 @@ export default function Dashboard() {
                   <span className="quick-stat-value">{stats.tasks}</span>
                 </div>
               </div>
-              <div className="quick-stat-item">
-                <div className="quick-stat-icon cyan">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="quick-stat-item" style={{ '--stat-color': '#3a86ff', '--stat-glow': 'rgba(58, 134, 255, 0.3)' } as React.CSSProperties}>
+                <div className="quick-stat-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a86ff" strokeWidth="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                     <line x1="3" y1="9" x2="21" y2="9"/>
                     <line x1="9" y1="21" x2="9" y2="9"/>
@@ -340,9 +340,9 @@ export default function Dashboard() {
                   <span className="quick-stat-value">{stats.projects}</span>
                 </div>
               </div>
-              <div className="quick-stat-item">
-                <div className="quick-stat-icon emerald">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="quick-stat-item" style={{ '--stat-color': '#30d158', '--stat-glow': 'rgba(48, 209, 88, 0.3)' } as React.CSSProperties}>
+                <div className="quick-stat-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#30d158" strokeWidth="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -354,9 +354,9 @@ export default function Dashboard() {
                   <span className="quick-stat-value">{stats.departments}</span>
                 </div>
               </div>
-              <div className="quick-stat-item">
-                <div className="quick-stat-icon orange">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="quick-stat-item" style={{ '--stat-color': '#ff9500', '--stat-glow': 'rgba(255, 149, 0, 0.3)' } as React.CSSProperties}>
+                <div className="quick-stat-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff9500" strokeWidth="2">
                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
                     <line x1="7" y1="7" x2="7.01" y2="7"/>
                   </svg>
@@ -382,7 +382,14 @@ export default function Dashboard() {
         </div>
         <div className="projects-grid">
           {projects.map((project) => (
-            <div key={project.projectId} className="project-card">
+            <div 
+              key={project.projectId} 
+              className="project-card"
+              style={{ 
+                '--project-color': getProjectColor(project.projectId),
+                '--project-glow': getProjectColor(project.projectId) + '40'
+              } as React.CSSProperties}
+            >
               <div className="project-header">
                 <div 
                   className="project-avatar"
@@ -424,8 +431,8 @@ export default function Dashboard() {
                       key={i} 
                       className="avatar" 
                       style={{ 
-                        background: ['#14b8a6', '#10b981', '#f59e0b'][i],
-                        marginLeft: i > 0 ? '-8px' : '0'
+                        background: ['#00f5d4', '#30d158', '#ff9500'][i],
+                        marginLeft: i > 0 ? '-10px' : '0'
                       }}
                     >
                       {initials}
@@ -503,7 +510,7 @@ export default function Dashboard() {
   );
 }
 
-// Line Chart Component
+// Line Chart Component - Neon Style
 function LineChart({ period }: { period: string }) {
   const data = {
     daily: [30, 45, 35, 50, 40, 60, 55],
@@ -541,9 +548,16 @@ function LineChart({ period }: { period: string }) {
     <svg viewBox={`0 0 ${width} ${height}`} className="line-chart-svg">
       <defs>
         <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#14b8a6" stopOpacity="0" />
+          <stop offset="0%" stopColor="#00f5d4" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#00f5d4" stopOpacity="0" />
         </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
       
       {/* Grid lines */}
@@ -554,7 +568,7 @@ function LineChart({ period }: { period: string }) {
           y1={padding + (i * (height - padding * 2)) / 4}
           x2={width - padding}
           y2={padding + (i * (height - padding * 2)) / 4}
-          stroke="#e2e8f0"
+          stroke="#27272a"
           strokeDasharray="4,4"
         />
       ))}
@@ -566,10 +580,11 @@ function LineChart({ period }: { period: string }) {
       <polyline 
         points={points} 
         fill="none" 
-        stroke="#14b8a6" 
+        stroke="#00f5d4" 
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
+        filter="url(#glow)"
       />
       
       {/* Points */}
@@ -578,8 +593,8 @@ function LineChart({ period }: { period: string }) {
         const y = height - padding - ((value - minValue) / range) * (height - padding * 2);
         return (
           <g key={index}>
-            <circle cx={x} cy={y} r="4" fill="white" stroke="#14b8a6" strokeWidth="2" />
-            <circle cx={x} cy={y} r="8" fill="rgba(20, 184, 166, 0.2)" className="chart-point" />
+            <circle cx={x} cy={y} r="4" fill="#00f5d4" filter="url(#glow)" />
+            <circle cx={x} cy={y} r="8" fill="rgba(0, 245, 212, 0.2)" className="chart-point" />
           </g>
         );
       })}
@@ -603,7 +618,7 @@ function LineChart({ period }: { period: string }) {
   );
 }
 
-// Donut Chart Component
+// Donut Chart Component - Neon Style
 function DonutChart({ completed, inProgress, pending }: { completed: number; inProgress: number; pending: number }) {
   const total = completed + inProgress + pending || 1;
   const radius = 70;
@@ -620,13 +635,23 @@ function DonutChart({ completed, inProgress, pending }: { completed: number; inP
 
   return (
     <svg viewBox="0 0 200 200" className="donut-chart-svg">
+      <defs>
+        <filter id="donutGlow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      
       {/* Background circle */}
       <circle
         cx="100"
         cy="100"
         r={radius}
         fill="none"
-        stroke="#f1f5f9"
+        stroke="#27272a"
         strokeWidth={strokeWidth}
       />
       
@@ -636,12 +661,13 @@ function DonutChart({ completed, inProgress, pending }: { completed: number; inP
         cy="100"
         r={radius}
         fill="none"
-        stroke="#10b981"
+        stroke="#30d158"
         strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={completedOffset}
         strokeLinecap="round"
         transform="rotate(-90 100 100)"
+        filter="url(#donutGlow)"
         style={{ transition: 'stroke-dashoffset 0.5s ease' }}
       />
       
@@ -651,12 +677,13 @@ function DonutChart({ completed, inProgress, pending }: { completed: number; inP
         cy="100"
         r={radius}
         fill="none"
-        stroke="#14b8a6"
+        stroke="#00f5d4"
         strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={inProgressOffset}
         strokeLinecap="round"
         transform={`rotate(${-90 + completedPercent * 3.6} 100 100)`}
+        filter="url(#donutGlow)"
         style={{ transition: 'stroke-dashoffset 0.5s ease' }}
       />
       
@@ -666,12 +693,13 @@ function DonutChart({ completed, inProgress, pending }: { completed: number; inP
         cy="100"
         r={radius}
         fill="none"
-        stroke="#f59e0b"
+        stroke="#ff9500"
         strokeWidth={strokeWidth}
         strokeDasharray={circumference}
         strokeDashoffset={pendingOffset}
         strokeLinecap="round"
         transform={`rotate(${-90 + (completedPercent + inProgressPercent) * 3.6} 100 100)`}
+        filter="url(#donutGlow)"
         style={{ transition: 'stroke-dashoffset 0.5s ease' }}
       />
       
@@ -687,7 +715,7 @@ function DonutChart({ completed, inProgress, pending }: { completed: number; inP
 }
 
 function getProjectColor(id: number): string {
-  const colors = ['#14b8a6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4'];
+  const colors = ['#00f5d4', '#30d158', '#ff9500', '#ff006e', '#bf5af2', '#3a86ff'];
   return colors[id % colors.length];
 }
 
