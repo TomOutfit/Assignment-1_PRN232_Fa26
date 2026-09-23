@@ -6,6 +6,9 @@ import {
   FolderKanban,
   Building2,
   Tag,
+  Search,
+  Settings2,
+  Sliders,
   Sun,
   Moon,
   Menu,
@@ -28,29 +31,35 @@ export default function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-    { path: '/projects', label: 'Projects', icon: FolderKanban },
+  const publicNavItems = [
+    { path: '/', label: 'Home / Dashboard', icon: LayoutDashboard },
     { path: '/departments', label: 'Departments', icon: Building2 },
-    { path: '/tags', label: 'Tags', icon: Tag },
+    { path: '/projects', label: 'Projects', icon: FolderKanban },
+    { path: '/tasks', label: 'Tasks Board', icon: CheckSquare },
+    { path: '/search', label: 'Search & Filter', icon: Search },
+  ];
+
+  const managementNavItems = [
+    { path: '/tasks/manage', label: 'Manage Tasks', icon: Settings2 },
+    { path: '/projects/manage', label: 'Manage Projects', icon: Sliders },
+    { path: '/departments/manage', label: 'Manage Depts', icon: Building2 },
+    { path: '/tags/manage', label: 'Manage Tags', icon: Tag },
   ];
 
   const getPageTitle = () => {
-    switch (location.pathname) {
-      case '/':
-        return 'Dashboard Overview';
-      case '/tasks':
-        return 'Task Management';
-      case '/projects':
-        return 'Projects & Initiatives';
-      case '/departments':
-        return 'Department Directory';
-      case '/tags':
-        return 'Tag Taxonomy';
-      default:
-        return 'TaskTrack Hub';
-    }
+    if (location.pathname === '/') return 'Dashboard Overview';
+    if (location.pathname === '/search') return 'Search & Filter Hub';
+    if (location.pathname.startsWith('/departments/manage')) return 'Department Management';
+    if (location.pathname.startsWith('/departments/')) return 'Department Details';
+    if (location.pathname === '/departments') return 'Departments Directory';
+    if (location.pathname.startsWith('/projects/manage')) return 'Project Management';
+    if (location.pathname.startsWith('/projects/')) return 'Project Details';
+    if (location.pathname === '/projects') return 'Projects Directory';
+    if (location.pathname.startsWith('/tasks/manage')) return 'Task Management Hub';
+    if (location.pathname.startsWith('/tasks/')) return 'Task Details';
+    if (location.pathname === '/tasks') return 'Tasks & Kanban Board';
+    if (location.pathname.startsWith('/tags')) return 'Tag Taxonomy Management';
+    return 'TaskTrack Enterprise';
   };
 
   return (
@@ -70,7 +79,7 @@ export default function Layout({ children }: LayoutProps) {
             {!collapsed && (
               <div className="brand-text">
                 <span className="brand-name">TaskTrack</span>
-                <span className="brand-badge">PRO</span>
+                <span className="brand-badge">ENTERPRISE</span>
               </div>
             )}
           </div>
@@ -91,8 +100,32 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-section-label">{!collapsed && 'NAVIGATION'}</div>
-          {navItems.map(item => {
+          <div className="nav-section-label">{!collapsed && 'PUBLIC PORTAL'}</div>
+          {publicNavItems.map(item => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                title={collapsed ? item.label : undefined}
+                end={item.path === '/'}
+              >
+                <div className="nav-icon-wrapper">
+                  <Icon size={18} />
+                </div>
+                {!collapsed && <span className="nav-label">{item.label}</span>}
+                {isActive && <div className="active-glow-indicator" />}
+              </NavLink>
+            );
+          })}
+
+          <div className="nav-section-label" style={{ marginTop: '12px' }}>
+            {!collapsed && 'MANAGEMENT (CRUD)'}
+          </div>
+          {managementNavItems.map(item => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -104,7 +137,7 @@ export default function Layout({ children }: LayoutProps) {
                 title={collapsed ? item.label : undefined}
               >
                 <div className="nav-icon-wrapper">
-                  <Icon size={19} />
+                  <Icon size={18} />
                 </div>
                 {!collapsed && <span className="nav-label">{item.label}</span>}
                 {isActive && <div className="active-glow-indicator" />}
@@ -118,12 +151,12 @@ export default function Layout({ children }: LayoutProps) {
             <div className="system-status-card">
               <div className="status-indicator">
                 <span className="status-dot" />
-                <span className="status-text">System Active</span>
+                <span className="status-text">Backend & API Ready</span>
               </div>
-              <div className="status-sub">Assignment 1 • PRN232</div>
+              <div className="status-sub">PRN232 Assignment 1</div>
             </div>
           ) : (
-            <div className="collapsed-status-dot" title="System Active" />
+            <div className="collapsed-status-dot" title="Backend & API Ready" />
           )}
         </div>
       </aside>
@@ -146,9 +179,15 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="header-right">
+            <NavLink to="/search" className="header-quick-search desktop-only" title="Quick Search">
+              <Search size={14} />
+              <span>Search tasks, projects...</span>
+              <span className="search-shortcut">⌘K</span>
+            </NavLink>
+
             <div className="workspace-badge desktop-only">
               <Sparkles size={14} className="sparkle-icon" />
-              <span>Enterprise Workspace</span>
+              <span>Public Access</span>
             </div>
 
             {/* Theme Switcher Button */}

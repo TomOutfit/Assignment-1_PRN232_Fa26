@@ -253,6 +253,36 @@
   gap: 16px;
 }
 
+.header-quick-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-base);
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  transition: all var(--transition-fast);
+  min-width: 220px;
+}
+
+.header-quick-search:hover {
+  border-color: var(--primary);
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.search-shortcut {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+}
+
 .workspace-badge {
   display: flex;
   align-items: center;
