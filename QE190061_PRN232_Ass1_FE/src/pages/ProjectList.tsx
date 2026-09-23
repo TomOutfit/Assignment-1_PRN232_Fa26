@@ -1,27 +1,58 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Plus,
+  Search,
+  Building2,
+  Calendar,
+  Edit2,
+  Trash2,
+  X,
+  LayoutGrid,
+  Table as TableIcon,
+} from 'lucide-react';
 import { projectApi, departmentApi } from '../services/api';
 import type { Project, CreateProjectDto, UpdateProjectDto, Department } from '../types';
+import { Modal } from '../components/ui/Modal';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Badge } from '../components/ui/Badge';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Skeleton } from '../components/ui/Skeleton';
+import { useToast } from '../context/ToastContext';
 import './ProjectList.css';
 
-const STATUS_OPTIONS = [
-  { value: 0, label: 'Not Started', color: '#94a3b8', bg: '#f1f5f9' },
-  { value: 1, label: 'In Progress', color: '#667eea', bg: 'rgba(102, 126, 234, 0.1)' },
-  { value: 2, label: 'Completed', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' },
-  { value: 3, label: 'On Hold', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+const PROJECT_STATUS_OPTIONS = [
+  { value: 0, label: 'Planning', color: '#64748b' },
+  { value: 1, label: 'In Progress', color: '#3b82f6' },
+  { value: 2, label: 'Completed', color: '#10b981' },
+  { value: 3, label: 'On Hold', color: '#f59e0b' },
+  { value: 4, label: 'Cancelled', color: '#ef4444' },
 ];
 
 export default function ProjectList() {
+  const toast = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // View Mode: 'grid' | 'table'
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+
+  // Filters
+  const [searchName, setSearchName] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState<number | ''>('');
+  const [filterStatus, setFilterStatus] = useState<number | ''>('');
+
+  // Modal State
   const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [filters, setFilters] = useState({ 
-    name: '', 
-    status: '' as number | '', 
-    departmentId: '' as number | '' 
-  });
-  const [form, setForm] = useState<CreateProjectDto>({
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Delete Confirm Modal
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState<CreateProjectDto>({
     projectName: '',
     description: '',
     startDate: new Date().toISOString().split('T')[0],
@@ -29,46 +60,49 @@ export default function ProjectList() {
     status: 0,
     departmentId: 0,
   });
-  const [error, setError] = useState('');
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
-      const params: { name?: string; status?: number; departmentId?: number } = {};
-      if (filters.name) params.name = filters.name;
-      if (filters.status !== '') params.status = filters.status;
-      if (filters.departmentId !== '') params.departmentId = filters.departmentId;
-      
+      const params: { name?: string; status?: number | ''; departmentId?: number | '' } = {};
+      if (searchName.trim()) params.name = searchName.trim();
+      if (filterStatus !== '') params.status = filterStatus;
+      if (filterDepartment !== '') params.departmentId = filterDepartment;
+
       const data = await projectApi.getAll(Object.keys(params).length > 0 ? params : undefined);
       setProjects(data);
     } catch (err) {
-      console.error('Error fetching projects:', err);
+      console.error(err);
+      toast.error('Failed to load projects.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchName, filterStatus, filterDepartment, toast]);
+
+  useEffect(() => {
+    departmentApi
+      .getAll()
+      .then(data => setDepartments(data))
+      .catch(() => toast.error('Failed to load departments.'));
+  }, [toast]);
 
   useEffect(() => {
     fetchProjects();
-  }, [filters]);
+  }, [fetchProjects]);
 
-  useEffect(() => {
-    departmentApi.getAll().then(setDepartments);
-  }, []);
-
-  const openModal = (proj?: Project) => {
+  const openProjectModal = (proj?: Project) => {
     if (proj) {
-      setEditingId(proj.projectId);
-      setForm({
+      setEditingProject(proj);
+      setFormData({
         projectName: proj.projectName,
         description: proj.description || '',
-        startDate: proj.startDate,
-        endDate: proj.endDate || undefined,
+        startDate: proj.startDate ? proj.startDate.split('T')[0] : '',
+        endDate: proj.endDate ? proj.endDate.split('T')[0] : undefined,
         status: proj.status,
         departmentId: proj.departmentId,
       });
     } else {
-      setEditingId(null);
-      setForm({
+      setEditingProject(null);
+      setFormData({
         projectName: '',
         description: '',
         startDate: new Date().toISOString().split('T')[0],
@@ -77,367 +111,434 @@ export default function ProjectList() {
         departmentId: departments[0]?.departmentId || 0,
       });
     }
-    setError('');
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.projectName.trim()) {
-      setError('Project name is required');
+    if (!formData.projectName.trim()) {
+      toast.warning('Project name is required.');
       return;
     }
-    if (!form.departmentId) {
-      setError('Please select a department');
+    if (!formData.departmentId) {
+      toast.warning('Please select an owning department.');
       return;
     }
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
+      toast.warning('Start date cannot be after end date.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      if (editingId) {
-        await projectApi.update(editingId, form as UpdateProjectDto);
+      if (editingProject) {
+        await projectApi.update(editingProject.projectId, formData as UpdateProjectDto);
+        toast.success(`Project "${formData.projectName}" updated.`);
       } else {
-        await projectApi.create(form);
+        await projectApi.create(formData);
+        toast.success(`Project "${formData.projectName}" created.`);
       }
       setShowModal(false);
       fetchProjects();
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'An error occurred');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save project.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return;
+    setIsDeleting(true);
     try {
-      await projectApi.delete(id);
+      await projectApi.delete(projectToDelete.projectId);
+      toast.success(`Project "${projectToDelete.projectName}" deleted.`);
+      setProjectToDelete(null);
       fetchProjects();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Cannot delete project with linked tasks');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete project. Please check if tasks exist under this project.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const getStatusBadge = (status: number) => {
-    const opt = STATUS_OPTIONS[status];
-    return (
-      <span 
-        className="project-status-badge"
-        style={{ 
-          backgroundColor: opt.bg,
-          color: opt.color
-        }}
-      >
-        <span className="status-dot" style={{ backgroundColor: opt.color }} />
-        {opt.label}
-      </span>
-    );
+  const getStatusBadge = (status: number, name?: string) => {
+    const config = PROJECT_STATUS_OPTIONS.find(s => s.value === status);
+    return <Badge label={name || config?.label || `Status ${status}`} color={config?.color} />;
   };
-
-  const clearFilters = () => {
-    setFilters({ name: '', status: '', departmentId: '' });
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const getProjectColor = (id: number): string => {
-    const colors = ['#667eea', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-    return colors[id % colors.length];
-  };
-
-  if (loading) {
-    return (
-      <div className="project-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading projects...</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="project-list-page">
-      <div className="page-header">
-        <div className="header-content">
-          <h2>Projects</h2>
-          <p className="page-subtitle">Manage your team projects</p>
+    <div className="projects-page">
+      {/* Header */}
+      <div className="projects-header-bar">
+        <div>
+          <h2 className="page-heading">Projects Directory</h2>
+          <p className="page-desc">Oversee initiatives, milestones, and cross-departmental tasks.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => openModal()}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add Project
-        </button>
+
+        <div className="projects-action-group">
+          <div className="view-toggle-container">
+            <button
+              className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid Cards View"
+            >
+              <LayoutGrid size={16} />
+              <span>Grid</span>
+            </button>
+            <button
+              className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Table View"
+            >
+              <TableIcon size={16} />
+              <span>Table</span>
+            </button>
+          </div>
+
+          <button className="btn btn-primary" onClick={() => openProjectModal()}>
+            <Plus size={16} />
+            <span>New Project</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="filter-card">
-        <div className="filter-row">
-          <div className="search-input-wrapper">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={filters.name}
-              onChange={e => setFilters({ ...filters, name: e.target.value })}
-              className="search-input"
-            />
-          </div>
-          <select 
+      {/* Filter Toolbar */}
+      <div className="glass-card filter-toolbar">
+        <div className="search-box">
+          <Search size={16} className="search-icon" />
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search projects by name..."
+            value={searchName}
+            onChange={e => setSearchName(e.target.value)}
+          />
+          {searchName && (
+            <button className="clear-search-btn" onClick={() => setSearchName('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        <div className="filter-dropdowns">
+          <select
             className="filter-select"
-            value={filters.status} 
-            onChange={e => setFilters({ ...filters, status: e.target.value ? Number(e.target.value) : '' })}
-          >
-            <option value="">All Status</option>
-            {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-          <select 
-            className="filter-select"
-            value={filters.departmentId} 
-            onChange={e => setFilters({ ...filters, departmentId: e.target.value ? Number(e.target.value) : '' })}
+            value={filterDepartment}
+            onChange={e => setFilterDepartment(e.target.value === '' ? '' : Number(e.target.value))}
           >
             <option value="">All Departments</option>
-            {departments.map(d => <option key={d.departmentId} value={d.departmentId}>{d.departmentName}</option>)}
+            {departments.map(d => (
+              <option key={d.departmentId} value={d.departmentId}>
+                {d.departmentName}
+              </option>
+            ))}
           </select>
-          {Object.values(filters).some(v => v !== '') && (
-            <button className="btn btn-secondary clear-btn" onClick={clearFilters}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-              Clear
+
+          <select
+            className="filter-select"
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value === '' ? '' : Number(e.target.value))}
+          >
+            <option value="">All Statuses</option>
+            {PROJECT_STATUS_OPTIONS.map(s => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+          {(searchName || filterDepartment !== '' || filterStatus !== '') && (
+            <button
+              className="btn btn-ghost btn-sm reset-filter-btn"
+              onClick={() => {
+                setSearchName('');
+                setFilterDepartment('');
+                setFilterStatus('');
+              }}
+            >
+              <X size={14} />
+              <span>Reset</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Projects Grid */}
-      {projects.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="3" y1="9" x2="21" y2="9"/>
-              <line x1="9" y1="21" x2="9" y2="9"/>
-            </svg>
-          </div>
-          <h3>No projects found</h3>
-          <p>Create a new project to get started</p>
-          <button className="btn btn-primary" onClick={() => openModal()}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add Project
-          </button>
-        </div>
-      ) : (
+      {/* Main View */}
+      {loading ? (
         <div className="projects-grid">
-          {projects.map(project => (
-            <div key={project.projectId} className="project-card">
-              <div 
-                className="project-color-bar"
-                style={{ backgroundColor: getProjectColor(project.projectId) }}
-              />
-              
-              <div className="project-card-content">
-                <div className="project-header">
-                  <div className="project-title-row">
-                    <div 
-                      className="project-avatar"
-                      style={{ backgroundColor: getProjectColor(project.projectId) }}
+          <Skeleton height="200px" borderRadius="var(--radius-xl)" />
+          <Skeleton height="200px" borderRadius="var(--radius-xl)" />
+          <Skeleton height="200px" borderRadius="var(--radius-xl)" />
+        </div>
+      ) : projects.length === 0 ? (
+        <EmptyState
+          title="No projects found"
+          description="Create your first project or adjust your search filters."
+          actionText="Create Project"
+          onAction={() => openProjectModal()}
+        />
+      ) : viewMode === 'grid' ? (
+        /* Grid View */
+        <div className="projects-grid">
+          {projects.map(proj => {
+            const taskCount = proj.tasks ? proj.tasks.length : 0;
+            const completedTaskCount = proj.tasks ? proj.tasks.filter(t => t.status === 2).length : 0;
+            const progress = taskCount > 0 ? Math.round((completedTaskCount / taskCount) * 100) : 0;
+
+            return (
+              <div key={proj.projectId} className="glass-card project-card">
+                <div className="proj-card-header">
+                  <div className="proj-dept-badge">
+                    <Building2 size={12} />
+                    <span>{proj.departmentName}</span>
+                  </div>
+                  <div className="proj-actions">
+                    <button
+                      className="btn-icon-sm btn-ghost"
+                      onClick={() => openProjectModal(proj)}
+                      title="Edit"
                     >
-                      {project.projectName.charAt(0)}
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      className="btn-icon-sm btn-ghost text-danger"
+                      onClick={() => setProjectToDelete(proj)}
+                      title="Delete"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="proj-card-body">
+                  <h3 className="proj-card-title">{proj.projectName}</h3>
+                  {proj.description && <p className="proj-card-desc">{proj.description}</p>}
+                </div>
+
+                {/* Progress bar if tasks exist */}
+                {taskCount > 0 && (
+                  <div className="proj-progress-section">
+                    <div className="proj-progress-header">
+                      <span>Tasks Progress</span>
+                      <span>
+                        {completedTaskCount}/{taskCount} ({progress}%)
+                      </span>
                     </div>
-                    <div className="project-info">
-                      <h3 className="project-title">{project.projectName}</h3>
-                      <div className="project-department">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                        </svg>
-                        {project.departmentName}
-                      </div>
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{ width: `${progress}%`, background: 'var(--primary)' }}
+                      />
                     </div>
                   </div>
-                  {getStatusBadge(project.status)}
-                </div>
-                
-                {project.description && (
-                  <p className="project-description">{project.description}</p>
                 )}
-                
-                <div className="project-dates">
-                  <div className="date-item">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                      <line x1="16" y1="2" x2="16" y2="6"/>
-                      <line x1="8" y1="2" x2="8" y2="6"/>
-                      <line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    <span>Start: <strong>{formatDate(project.startDate)}</strong></span>
+
+                <div className="proj-card-footer">
+                  <div className="proj-dates">
+                    <Calendar size={12} />
+                    <span>
+                      {new Date(proj.startDate).toLocaleDateString()}
+                      {proj.endDate ? ` → ${new Date(proj.endDate).toLocaleDateString()}` : ' (Ongoing)'}
+                    </span>
                   </div>
-                  {project.endDate && (
-                    <div className="date-item">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      <span>End: <strong>{formatDate(project.endDate)}</strong></span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="project-footer">
-                  <div className="avatar-group">
-                    {['JD', 'MK', 'AS'].slice(0, 3).map((initials, i) => (
-                      <div 
-                        key={i} 
-                        className="avatar" 
-                        style={{ 
-                          background: ['#667eea', '#22c55e', '#f59e0b'][i]
-                        }}
-                      >
-                        {initials}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="project-actions">
-                    <button className="action-btn" onClick={() => openModal(project)} title="Edit">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <button className="action-btn delete" onClick={() => handleDelete(project.projectId)} title="Delete">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      </svg>
-                    </button>
-                  </div>
+                  {getStatusBadge(proj.status, proj.statusName)}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="data-table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Project Name</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Timeline</th>
+                <th>Active</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map(proj => (
+                <tr key={proj.projectId}>
+                  <td style={{ fontWeight: 600 }}>
+                    <div>{proj.projectName}</div>
+                    {proj.description && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {proj.description}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <span className="table-project-tag">
+                      <Building2 size={12} />
+                      {proj.departmentName}
+                    </span>
+                  </td>
+                  <td>{getStatusBadge(proj.status, proj.statusName)}</td>
+                  <td>
+                    <span className="table-date-cell">
+                      <Calendar size={12} />
+                      {new Date(proj.startDate).toLocaleDateString()}
+                      {proj.endDate ? ` → ${new Date(proj.endDate).toLocaleDateString()}` : ''}
+                    </span>
+                  </td>
+                  <td>
+                    <Badge
+                      label={proj.isActive ? 'Active' : 'Inactive'}
+                      variant={proj.isActive ? 'success' : 'neutral'}
+                      size="sm"
+                    />
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                      <button
+                        className="btn-icon-sm btn-ghost"
+                        onClick={() => openProjectModal(proj)}
+                        title="Edit"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        className="btn-icon-sm btn-ghost text-danger"
+                        onClick={() => setProjectToDelete(proj)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal animate-scale-in" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="3" y1="9" x2="21" y2="9"/>
-                  <line x1="9" y1="21" x2="9" y2="9"/>
-                </svg>
-                <h3>{editingId ? 'Edit Project' : 'Create New Project'}</h3>
-              </div>
-              <button onClick={() => setShowModal(false)} className="modal-close">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                {error && (
-                  <div className="error-message">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="12" y1="8" x2="12" y2="12"/>
-                      <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    {error}
-                  </div>
-                )}
-                
-                <div className="form-group">
-                  <label>Project Name</label>
-                  <input
-                    type="text"
-                    value={form.projectName}
-                    onChange={e => setForm({ ...form, projectName: e.target.value })}
-                    placeholder="Enter project name"
-                    className="form-input"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Department</label>
-                  <select
-                    value={form.departmentId}
-                    onChange={e => setForm({ ...form, departmentId: Number(e.target.value) })}
-                    className="form-select"
-                  >
-                    <option value={0}>Select department</option>
-                    {departments.map(d => <option key={d.departmentId} value={d.departmentId}>{d.departmentName}</option>)}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    value={form.description}
-                    onChange={e => setForm({ ...form, description: e.target.value })}
-                    placeholder="Enter description"
-                    rows={3}
-                    className="form-textarea"
-                  />
-                </div>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Start Date</label>
-                    <input
-                      type="date"
-                      value={form.startDate}
-                      onChange={e => setForm({ ...form, startDate: e.target.value })}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>End Date</label>
-                    <input
-                      type="date"
-                      value={form.endDate || ''}
-                      onChange={e => setForm({ ...form, endDate: e.target.value || undefined })}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label>Status</label>
-                  <select
-                    value={form.status}
-                    onChange={e => setForm({ ...form, status: Number(e.target.value) })}
-                    className="form-select"
-                  >
-                    {STATUS_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">
-                  {editingId ? 'Update Project' : 'Create Project'}
-                </button>
-              </div>
-            </form>
+      {/* Project Create / Edit Modal */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingProject ? 'Edit Project' : 'New Project'}
+        subtitle={editingProject ? `Editing #${editingProject.projectId}` : 'Define project details'}
+        maxWidth="md"
+      >
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Project Name *</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. Mobile App Redesign"
+              value={formData.projectName}
+              onChange={e => setFormData({ ...formData, projectName: e.target.value })}
+              required
+            />
           </div>
-        </div>
-      )}
+
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea
+              className="form-textarea"
+              placeholder="Brief summary of project scope..."
+              value={formData.description || ''}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Department *</label>
+              <select
+                className="form-select"
+                value={formData.departmentId}
+                onChange={e => setFormData({ ...formData, departmentId: Number(e.target.value) })}
+                required
+              >
+                <option value={0} disabled>
+                  Select Department
+                </option>
+                {departments.map(d => (
+                  <option key={d.departmentId} value={d.departmentId}>
+                    {d.departmentName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-select"
+                value={formData.status}
+                onChange={e => setFormData({ ...formData, status: Number(e.target.value) })}
+              >
+                {PROJECT_STATUS_OPTIONS.map(s => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Start Date *</label>
+              <input
+                type="date"
+                className="form-input"
+                value={formData.startDate}
+                onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Target End Date</label>
+              <input
+                type="date"
+                className="form-input"
+                value={formData.endDate || ''}
+                onChange={e =>
+                  setFormData({ ...formData, endDate: e.target.value ? e.target.value : undefined })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="modal-footer" style={{ margin: '24px -24px -24px -24px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowModal(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : editingProject ? 'Save Changes' : 'Create Project'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        isOpen={!!projectToDelete}
+        onClose={() => setProjectToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${projectToDelete?.projectName}"? All tasks associated with this project may be affected.`}
+        confirmText="Delete Project"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
