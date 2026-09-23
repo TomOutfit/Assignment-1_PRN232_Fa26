@@ -107,36 +107,137 @@ export default function Dashboard() {
       {/* KPI Stats Grid */}
       <div className="stats-grid">
         <StatCard
-          title="Total Tasks"
-          value={loading ? '...' : totalTasks}
-          subtitle={`${inProgressTasks} currently in progress`}
-          icon={<CheckSquare size={22} />}
-          colorScheme="primary"
-          trend={{ value: `${completionRate}% Done`, isPositive: completionRate >= 50 }}
-        />
-        <StatCard
-          title="Completed Tasks"
-          value={loading ? '...' : completedTasks}
-          subtitle="Resolved work items"
-          icon={<CheckCircle2 size={22} />}
-          colorScheme="emerald"
-          trend={{ value: `${completedTasks}/${totalTasks}`, isPositive: true }}
+          title="Departments"
+          value={loading ? '...' : departments.length}
+          subtitle="Operational units"
+          icon={<Building2 size={22} />}
+          colorScheme="cyan"
+          trend={{ value: `${departments.filter(d => d.isActive).length} Active`, isPositive: true }}
         />
         <StatCard
           title="Active Projects"
           value={loading ? '...' : projects.length}
-          subtitle={`Across ${departments.length} departments`}
+          subtitle="Strategic initiatives"
           icon={<FolderKanban size={22} />}
           colorScheme="purple"
+          trend={{ value: `${projects.filter(p => p.status === 1).length} In Progress`, isPositive: true }}
+        />
+        <StatCard
+          title="Total Tasks"
+          value={loading ? '...' : totalTasks}
+          subtitle={`${inProgressTasks} in progress`}
+          icon={<CheckSquare size={22} />}
+          colorScheme="primary"
+          trend={{ value: `${completionRate}% Done`, isPositive: completionRate >= 50 }}
         />
         <StatCard
           title="Attention Needed"
           value={loading ? '...' : overdueCount}
           subtitle="Tasks past due date"
           icon={<AlertCircle size={22} />}
-          colorScheme={overdueCount > 0 ? 'rose' : 'cyan'}
-          trend={{ value: overdueCount > 0 ? 'Overdue' : 'All Clear', isPositive: overdueCount === 0 }}
+          colorScheme={overdueCount > 0 ? 'rose' : 'emerald'}
+          trend={{ value: overdueCount > 0 ? `${overdueCount} Overdue` : 'All On Track', isPositive: overdueCount === 0 }}
         />
+      </div>
+
+      {/* Active Projects Cards Showcase (Requirement: list of active projects as cards) */}
+      <div className="dashboard-projects-section">
+        <div className="section-header-flex">
+          <div>
+            <h3 className="section-title">Active Projects</h3>
+            <p className="section-subtitle">Core initiatives, deliverables, and completion status</p>
+          </div>
+          <Link to="/projects" className="view-all-link">
+            <span>Explore all projects</span>
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="dashboard-project-cards-grid">
+            <Skeleton height="180px" borderRadius="var(--radius-xl)" />
+            <Skeleton height="180px" borderRadius="var(--radius-xl)" />
+            <Skeleton height="180px" borderRadius="var(--radius-xl)" />
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="glass-card empty-mini-state" style={{ padding: '32px' }}>
+            <FolderKanban size={32} color="var(--primary)" />
+            <span style={{ fontSize: '0.9375rem', fontWeight: 600 }}>No active projects found.</span>
+          </div>
+        ) : (
+          <div className="dashboard-project-cards-grid">
+            {projects.slice(0, 6).map(proj => {
+              const projTasks = tasks.filter(t => t.projectId === proj.projectId);
+              const projTotalTasks = projTasks.length;
+              const projDoneTasks = projTasks.filter(t => t.status === 2).length;
+              const projPct = projTotalTasks > 0 ? Math.round((projDoneTasks / projTotalTasks) * 100) : 0;
+
+              const statusLabels: Record<number, string> = {
+                0: 'Not Started',
+                1: 'In Progress',
+                2: 'Completed',
+                3: 'On Hold',
+              };
+
+              return (
+                <Link
+                  key={proj.projectId}
+                  to={`/projects/${proj.projectId}`}
+                  className="glass-card project-showcase-card"
+                >
+                  <div className="project-card-header">
+                    <div className="project-card-icon-title">
+                      <div className="project-icon-badge">
+                        <FolderKanban size={18} />
+                      </div>
+                      <div>
+                        <h4 className="project-card-name">{proj.projectName}</h4>
+                        <span className="project-card-dept">
+                          <Building2 size={12} />
+                          {proj.departmentName}
+                        </span>
+                      </div>
+                    </div>
+                    <span className={`status-badge-custom status-badge-${proj.status}`}>
+                      {proj.statusName || statusLabels[proj.status] || 'Active'}
+                    </span>
+                  </div>
+
+                  <p className="project-card-desc">
+                    {proj.description || 'No project description recorded.'}
+                  </p>
+
+                  <div className="project-card-progress-section">
+                    <div className="progress-labels-row">
+                      <span>Task Progress ({projDoneTasks}/{projTotalTasks})</span>
+                      <span className="progress-pct-val">{projPct}%</span>
+                    </div>
+                    <div className="progress-track" style={{ height: '6px' }}>
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${projPct}%`,
+                          background: projPct === 100 ? '#10b981' : 'linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%)',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="project-card-footer">
+                    <div className="project-card-dates">
+                      <Calendar size={12} />
+                      <span>{new Date(proj.startDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="project-card-link-action">
+                      <span>View Details</span>
+                      <ArrowRight size={13} />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Analytics & Breakdown Section */}
@@ -314,105 +415,59 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom Section: Urgent Deadlines & Project Overview */}
-      <div className="dashboard-grid-2" style={{ marginTop: '24px' }}>
-        {/* Urgent Deadlines Widget */}
-        <div className="glass-card recent-card">
-          <div className="card-header-flex">
-            <div>
-              <h3 className="section-title">Upcoming Deadlines</h3>
-              <p className="section-subtitle">Prioritized pending tasks</p>
-            </div>
-            <Link to="/tasks" className="view-all-link">
-              <span>View all</span>
-              <ArrowRight size={14} />
-            </Link>
+      {/* Urgent Deadlines Widget */}
+      <div className="glass-card recent-card">
+        <div className="card-header-flex">
+          <div>
+            <h3 className="section-title">Upcoming Deadlines</h3>
+            <p className="section-subtitle">Prioritized pending work items requiring action</p>
           </div>
-
-          <div className="task-mini-list">
-            {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-                <Skeleton height="36px" />
-                <Skeleton height="36px" />
-                <Skeleton height="36px" />
-              </div>
-            ) : upcomingTasks.length === 0 ? (
-              <div className="empty-mini-state">
-                <CheckCircle2 size={24} color="#10b981" />
-                <span>No pending upcoming tasks!</span>
-              </div>
-            ) : (
-              upcomingTasks.map(task => {
-                const isOverdue = task.dueDate && new Date(task.dueDate) < now;
-                return (
-                  <div key={task.taskId} className="task-mini-item">
-                    <div className="task-mini-left">
-                      <span className="task-mini-title">{task.title}</span>
-                      <div className="task-mini-meta">
-                        {task.projectName && <span className="meta-project">{task.projectName}</span>}
-                        {task.dueDate && (
-                          <span className={`meta-date ${isOverdue ? 'date-overdue' : ''}`}>
-                            <Calendar size={12} />
-                            {new Date(task.dueDate).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="task-mini-right">
-                      <PriorityBadge priority={task.priority} priorityName={task.priorityName} />
-                      <TaskStatusBadge status={task.status} statusName={task.statusName} />
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <Link to="/tasks" className="view-all-link">
+            <span>View all tasks</span>
+            <ArrowRight size={14} />
+          </Link>
         </div>
 
-        {/* Projects Health Widget */}
-        <div className="glass-card recent-card">
-          <div className="card-header-flex">
-            <div>
-              <h3 className="section-title">Projects Snapshot</h3>
-              <p className="section-subtitle">Active initiatives & departments</p>
+        <div className="task-mini-list">
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+              <Skeleton height="36px" />
+              <Skeleton height="36px" />
+              <Skeleton height="36px" />
             </div>
-            <Link to="/projects" className="view-all-link">
-              <span>View all</span>
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          <div className="projects-mini-list">
-            {loading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-                <Skeleton height="36px" />
-                <Skeleton height="36px" />
-                <Skeleton height="36px" />
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="empty-mini-state">
-                <FolderKanban size={24} color="var(--primary)" />
-                <span>No active projects found.</span>
-              </div>
-            ) : (
-              projects.slice(0, 5).map(proj => (
-                <div key={proj.projectId} className="project-mini-item">
-                  <div className="project-mini-info">
-                    <span className="project-mini-name">{proj.projectName}</span>
-                    <span className="project-mini-dept">
-                      <Building2 size={12} />
-                      {proj.departmentName}
-                    </span>
+          ) : upcomingTasks.length === 0 ? (
+            <div className="empty-mini-state">
+              <CheckCircle2 size={24} color="#10b981" />
+              <span>No pending upcoming tasks! All clear.</span>
+            </div>
+          ) : (
+            upcomingTasks.map(task => {
+              const isOverdue = task.dueDate && new Date(task.dueDate) < now;
+              return (
+                <div key={task.taskId} className="task-mini-item">
+                  <div className="task-mini-left">
+                    <Link to={`/tasks/${task.taskId}`} className="task-mini-title-link">
+                      {task.title}
+                    </Link>
+                    <div className="task-mini-meta">
+                      {task.projectName && <span className="meta-project">{task.projectName}</span>}
+                      {task.dueDate && (
+                        <span className={`meta-date ${isOverdue ? 'date-overdue' : ''}`}>
+                          <Calendar size={12} />
+                          {new Date(task.dueDate).toLocaleDateString()}
+                          {isOverdue && ' (Overdue)'}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="project-mini-status">
-                    <span className="project-date-tag">
-                      {new Date(proj.startDate).toLocaleDateString()}
-                    </span>
+                  <div className="task-mini-right">
+                    <PriorityBadge priority={task.priority} priorityName={task.priorityName} />
+                    <TaskStatusBadge status={task.status} statusName={task.statusName} />
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
