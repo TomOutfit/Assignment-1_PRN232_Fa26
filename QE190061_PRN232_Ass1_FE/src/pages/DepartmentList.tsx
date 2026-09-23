@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -9,6 +10,7 @@ import {
   Layers,
   LayoutGrid,
   Table as TableIcon,
+  Settings,
 } from 'lucide-react';
 import { departmentApi } from '../services/api';
 import type { Department, CreateDepartmentDto, UpdateDepartmentDto } from '../types';
@@ -24,7 +26,7 @@ export default function DepartmentList() {
   const toast = useToast();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [searchName, setSearchName] = useState('');
 
   // Modals
@@ -127,27 +129,37 @@ export default function DepartmentList() {
       {/* Header */}
       <div className="departments-header-bar">
         <div>
-          <h2 className="page-heading">Departments Directory</h2>
-          <p className="page-desc">Structure organizational units and strategic departments.</p>
+          <h2 className="page-heading">Department Management (CRUD)</h2>
+          <p className="page-desc">Create, configure, and maintain organizational units.</p>
         </div>
 
         <div className="departments-action-group">
+          {/* Segmented Mode */}
+          <div className="view-toggle-container">
+            <Link to="/departments" className="view-toggle-btn">
+              <Building2 size={15} />
+              <span>Cards</span>
+            </Link>
+            <Link to="/departments/manage" className="view-toggle-btn active">
+              <Settings size={15} />
+              <span>Manage</span>
+            </Link>
+          </div>
+
           <div className="view-toggle-container">
             <button
               className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => setViewMode('grid')}
               title="Grid Cards View"
             >
-              <LayoutGrid size={16} />
-              <span>Grid</span>
+              <LayoutGrid size={15} />
             </button>
             <button
               className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
               title="Table View"
             >
-              <TableIcon size={16} />
-              <span>Table</span>
+              <TableIcon size={15} />
             </button>
           </div>
 

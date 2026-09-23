@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -425,7 +426,9 @@ export default function TaskList() {
                             </div>
                           </div>
 
-                          <h4 className="card-task-title">{task.title}</h4>
+                          <Link to={`/tasks/${task.taskId}`} className="card-task-title-link">
+                            <h4 className="card-task-title">{task.title}</h4>
+                          </Link>
                           {task.description && (
                             <p className="card-task-desc">{task.description}</p>
                           )}
@@ -648,6 +651,51 @@ export default function TaskList() {
                   setFormData({ ...formData, dueDate: e.target.value ? e.target.value : undefined })
                 }
               />
+              <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="quick-move-btn"
+                  onClick={() => {
+                    const d = new Date();
+                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
+                  }}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  className="quick-move-btn"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
+                  }}
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  className="quick-move-btn"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 7);
+                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
+                  }}
+                >
+                  +1 Week
+                </button>
+                <button
+                  type="button"
+                  className="quick-move-btn"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setMonth(d.getMonth() + 1);
+                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
+                  }}
+                >
+                  +1 Month
+                </button>
+              </div>
             </div>
           </div>
 

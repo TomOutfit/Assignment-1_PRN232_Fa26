@@ -36,17 +36,25 @@ export default function PublicDepartments() {
     <div className="detail-page-container animate-fade-in" style={{ maxWidth: '1200px' }}>
       {/* Top Banner */}
       <div className="glass-card detail-hero-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 className="detail-title">Organizational Departments</h1>
             <p className="detail-desc" style={{ marginTop: '4px' }}>
               Explore operational units, team divisions, and their respective initiatives.
             </p>
           </div>
-          <Link to="/departments/manage" className="btn btn-secondary">
-            <Settings size={16} />
-            <span>Department Management</span>
-          </Link>
+
+          {/* Segmented View Switcher */}
+          <div className="view-toggle-container">
+            <Link to="/departments" className="view-toggle-btn active">
+              <Building2 size={15} />
+              <span>Overview Cards</span>
+            </Link>
+            <Link to="/departments/manage" className="view-toggle-btn">
+              <Settings size={15} />
+              <span>Manage Table</span>
+            </Link>
+          </div>
         </div>
 
         {/* Search Input */}

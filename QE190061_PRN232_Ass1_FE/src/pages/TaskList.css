@@ -249,11 +249,22 @@
   gap: 2px;
 }
 
+.card-task-title-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card-task-title-link:hover .card-task-title {
+  color: var(--primary);
+}
+
 .card-task-title {
   font-size: 0.9375rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.35;
+  transition: color var(--transition-fast);
 }
 
 .card-task-desc {

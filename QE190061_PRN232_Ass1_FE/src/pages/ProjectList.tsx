@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -9,6 +10,8 @@ import {
   X,
   LayoutGrid,
   Table as TableIcon,
+  FolderKanban,
+  Settings,
 } from 'lucide-react';
 import { projectApi, departmentApi } from '../services/api';
 import type { Project, CreateProjectDto, UpdateProjectDto, Department } from '../types';
@@ -35,7 +38,7 @@ export default function ProjectList() {
   const [loading, setLoading] = useState(true);
 
   // View Mode: 'grid' | 'table'
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Filters
   const [searchName, setSearchName] = useState('');
@@ -174,27 +177,37 @@ export default function ProjectList() {
       {/* Header */}
       <div className="projects-header-bar">
         <div>
-          <h2 className="page-heading">Projects Directory</h2>
+          <h2 className="page-heading">Project Management (CRUD)</h2>
           <p className="page-desc">Oversee initiatives, milestones, and cross-departmental tasks.</p>
         </div>
 
         <div className="projects-action-group">
+          {/* Segmented Switcher */}
+          <div className="view-toggle-container">
+            <Link to="/projects" className="view-toggle-btn">
+              <FolderKanban size={15} />
+              <span>Cards</span>
+            </Link>
+            <Link to="/projects/manage" className="view-toggle-btn active">
+              <Settings size={15} />
+              <span>Manage</span>
+            </Link>
+          </div>
+
           <div className="view-toggle-container">
             <button
               className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => setViewMode('grid')}
               title="Grid Cards View"
             >
-              <LayoutGrid size={16} />
-              <span>Grid</span>
+              <LayoutGrid size={15} />
             </button>
             <button
               className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
               title="Table View"
             >
-              <TableIcon size={16} />
-              <span>Table</span>
+              <TableIcon size={15} />
             </button>
           </div>
 

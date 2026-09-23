@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { CommandPalette } from './ui/CommandPalette';
 import './Layout.css';
 
 interface LayoutProps {
@@ -28,8 +29,20 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const publicNavItems = [
     { path: '/', label: 'Home / Dashboard', icon: LayoutDashboard },
@@ -179,11 +192,16 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="header-right">
-            <NavLink to="/search" className="header-quick-search desktop-only" title="Quick Search">
+            <button
+              className="header-quick-search desktop-only"
+              onClick={() => setCmdOpen(true)}
+              title="Open Command Palette (Ctrl+K)"
+              type="button"
+            >
               <Search size={14} />
-              <span>Search tasks, projects...</span>
+              <span>Search tasks, projects, depts...</span>
               <span className="search-shortcut">⌘K</span>
-            </NavLink>
+            </button>
 
             <div className="workspace-badge desktop-only">
               <Sparkles size={14} className="sparkle-icon" />
@@ -211,6 +229,9 @@ export default function Layout({ children }: LayoutProps) {
           <div className="content-container">{children}</div>
         </main>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette isOpen={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }

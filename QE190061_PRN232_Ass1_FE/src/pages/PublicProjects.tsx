@@ -44,17 +44,25 @@ export default function PublicProjects() {
     <div className="detail-page-container animate-fade-in" style={{ maxWidth: '1200px' }}>
       {/* Top Banner */}
       <div className="glass-card detail-hero-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 className="detail-title">Enterprise Projects</h1>
             <p className="detail-desc" style={{ marginTop: '4px' }}>
               Strategic roadmap, team initiatives, and milestone progress tracking.
             </p>
           </div>
-          <Link to="/projects/manage" className="btn btn-secondary">
-            <Settings size={16} />
-            <span>Project Management</span>
-          </Link>
+
+          {/* Segmented Switcher */}
+          <div className="view-toggle-container">
+            <Link to="/projects" className="view-toggle-btn active">
+              <FolderKanban size={15} />
+              <span>Project Cards</span>
+            </Link>
+            <Link to="/projects/manage" className="view-toggle-btn">
+              <Settings size={15} />
+              <span>Manage Table</span>
+            </Link>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
