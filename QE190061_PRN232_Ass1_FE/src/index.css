@@ -49,6 +49,36 @@
   --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Default Surface / Text Theme (Dark Mode Base) */
+  --bg-app: #090d16;
+  --bg-sidebar: #0e131f;
+  --bg-header: rgba(14, 19, 31, 0.85);
+  --bg-card: #131929;
+  --bg-card-hover: #182033;
+  --bg-input: #0a0e17;
+  --bg-input-focus: #131929;
+  --bg-secondary: #1a2236;
+  --bg-tertiary: #232d47;
+  --bg-modal-backdrop: rgba(3, 6, 12, 0.75);
+  --bg-glass: rgba(19, 25, 41, 0.75);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  --border-subtle: #1e293b;
+  --border-base: #26334a;
+  --border-strong: #334155;
+  --border-glow: rgba(99, 102, 241, 0.35);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 35px rgba(0, 0, 0, 0.65);
+  --shadow-primary: 0 8px 30px rgba(99, 102, 241, 0.35);
 }
 
 /* ==========================================================================
