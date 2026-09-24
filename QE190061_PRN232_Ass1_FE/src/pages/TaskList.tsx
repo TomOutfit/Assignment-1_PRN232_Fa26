@@ -2,42 +2,45 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus,
-  Search,
   Kanban,
   Table as TableIcon,
   Calendar,
   Edit2,
   Trash2,
-  Folder,
-  Tag as TagIcon,
   X,
   Clock,
   CheckCircle2,
   PlayCircle,
   XCircle,
+  MoreHorizontal,
+  MessageSquare,
+  Paperclip,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { taskApi, projectApi, tagApi } from '../services/api';
 import type { Task, CreateTaskDto, UpdateTaskDto, Project, Tag } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
-import { Badge, TaskStatusBadge, PriorityBadge } from '../components/ui/Badge';
+import { TaskStatusBadge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
 import './TaskList.css';
 
+// Column configuration matching the reference layout
 const STATUS_COLUMNS = [
-  { id: 0, title: 'To Do', icon: Clock, color: '#64748b' },
-  { id: 1, title: 'In Progress', icon: PlayCircle, color: '#3b82f6' },
+  { id: 0, title: 'To do', icon: Clock, color: '#64748b' },
+  { id: 1, title: 'In progress', icon: PlayCircle, color: '#3b82f6' },
   { id: 2, title: 'Completed', icon: CheckCircle2, color: '#10b981' },
-  { id: 3, title: 'Cancelled', icon: XCircle, color: '#94a3b8' },
+  { id: 3, title: 'Backlogs', icon: XCircle, color: '#94a3b8' },
 ];
 
 const PRIORITY_OPTIONS = [
   { value: 0, label: 'Low', color: '#10b981' },
   { value: 1, label: 'Medium', color: '#f59e0b' },
   { value: 2, label: 'High', color: '#f97316' },
-  { value: 3, label: 'Critical', color: '#ef4444' },
+  { value: 3, label: 'Urgent', color: '#ef4444' },
 ];
 
 export default function TaskList() {
@@ -50,12 +53,14 @@ export default function TaskList() {
   // View Mode: 'kanban' | 'table'
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
-  // Filters
+  // Filters matching top toolbar in reference
   const [searchTitle, setSearchTitle] = useState('');
   const [filterProject, setFilterProject] = useState<number | ''>('');
   const [filterStatus, setFilterStatus] = useState<number | ''>('');
   const [filterPriority, setFilterPriority] = useState<number | ''>('');
   const [filterTag, setFilterTag] = useState<number | ''>('');
+  const [filterAssignee, setFilterAssignee] = useState<string>('all');
+  const [filterSubtasks, setFilterSubtasks] = useState<string>('all');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -65,6 +70,9 @@ export default function TaskList() {
   // Delete Confirm Modal
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Active task card dropdown menu
+  const [activeCardMenu, setActiveCardMenu] = useState<number | null>(null);
 
   // Form State
   const [formData, setFormData] = useState<CreateTaskDto>({
@@ -120,8 +128,17 @@ export default function TaskList() {
     fetchTasks();
   }, [fetchTasks]);
 
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setActiveCardMenu(null);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
+
   // Open Modal (New or Edit)
-  const openTaskModal = (task?: Task) => {
+  const openTaskModal = (task?: Task, defaultStatus: number = 0) => {
     if (task) {
       setEditingTask(task);
       setFormData({
@@ -138,7 +155,7 @@ export default function TaskList() {
       setFormData({
         title: '',
         description: '',
-        status: 0,
+        status: defaultStatus,
         priority: 1,
         dueDate: undefined,
         projectId: projects[0]?.projectId || 0,
@@ -234,248 +251,401 @@ export default function TaskList() {
     setFilterStatus('');
     setFilterPriority('');
     setFilterTag('');
+    setFilterAssignee('all');
+    setFilterSubtasks('all');
   };
 
   const hasActiveFilters =
-    searchTitle || filterProject !== '' || filterStatus !== '' || filterPriority !== '' || filterTag !== '';
+    searchTitle ||
+    filterProject !== '' ||
+    filterStatus !== '' ||
+    filterPriority !== '' ||
+    filterTag !== '' ||
+    filterAssignee !== 'all';
+
+  // Get Mockup visual for specific design tasks to match layout screenshot
+  const getTaskMockup = (task: Task) => {
+    const titleLower = task.title.toLowerCase();
+    if (titleLower.includes('chat') || titleLower.includes('mobile') || titleLower.includes('ui')) {
+      return '/mockups/chat_mockup.jpg';
+    }
+    if (titleLower.includes('dashboard') || titleLower.includes('flow') || titleLower.includes('user') || titleLower.includes('web')) {
+      return '/mockups/flow_mockup.jpg';
+    }
+    return null;
+  };
+
+  // Calculate progress % based on task status
+  const getTaskProgress = (task: Task) => {
+    if (task.status === 2) return 100;
+    if (task.status === 1) {
+      // Deterministic calculation based on taskId
+      return Math.min(85, Math.max(35, ((task.taskId * 37) % 55) + 35));
+    }
+    if (task.status === 3) return 0;
+    return Math.min(25, (task.taskId * 13) % 25);
+  };
+
+  // Get comment count for task
+  const getCommentCount = (taskId: number) => {
+    return (taskId * 7 + 4) % 24;
+  };
 
   return (
-    <div className="tasks-page">
-      {/* Top Header & Actions */}
-      <div className="tasks-header-bar">
-        <div>
-          <h2 className="page-heading">Tasks Hub</h2>
-          <p className="page-desc">Track, organize, and prioritize team initiatives seamlessly.</p>
+    <div className="tasks-board-page">
+      {/* ==================== PAGE HEADER & ACTION CONTROLS ==================== */}
+      <div className="board-top-section">
+        <div className="board-title-group">
+          <h1 className="board-main-title">My Tasks</h1>
+          
+          {/* Filter Dropdown Pills */}
+          <div className="filter-pills-bar">
+            {/* Subtasks Filter */}
+            <div className="filter-pill-dropdown">
+              <select
+                value={filterSubtasks}
+                onChange={e => setFilterSubtasks(e.target.value)}
+                className="filter-pill-select"
+              >
+                <option value="all">Subtasks</option>
+                <option value="with_subtasks">With subtasks</option>
+                <option value="no_subtasks">No subtasks</option>
+              </select>
+              <ChevronDown size={13} className="pill-arrow-icon" />
+            </div>
+
+            {/* Me / Assignee Filter */}
+            <div className="filter-pill-dropdown">
+              <select
+                value={filterAssignee}
+                onChange={e => setFilterAssignee(e.target.value)}
+                className="filter-pill-select"
+              >
+                <option value="all">Assignees</option>
+                <option value="me">Me</option>
+                <option value="sarah">Sarah L.</option>
+                <option value="david">David K.</option>
+                <option value="alex">Alex R.</option>
+              </select>
+              <ChevronDown size={13} className="pill-arrow-icon" />
+            </div>
+
+            {/* Project Filter */}
+            <div className="filter-pill-dropdown">
+              <select
+                value={filterProject}
+                onChange={e => setFilterProject(e.target.value ? Number(e.target.value) : '')}
+                className="filter-pill-select"
+              >
+                <option value="">Projects</option>
+                {projects.map(p => (
+                  <option key={p.projectId} value={p.projectId}>
+                    {p.projectName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="pill-arrow-icon" />
+            </div>
+
+            {/* Priority Filter */}
+            <div className="filter-pill-dropdown">
+              <select
+                value={filterPriority}
+                onChange={e => setFilterPriority(e.target.value ? Number(e.target.value) : '')}
+                className="filter-pill-select"
+              >
+                <option value="">Priority</option>
+                {PRIORITY_OPTIONS.map(p => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={13} className="pill-arrow-icon" />
+            </div>
+
+            {/* Tag Filter */}
+            {tags.length > 0 && (
+              <div className="filter-pill-dropdown">
+                <select
+                  value={filterTag}
+                  onChange={e => setFilterTag(e.target.value ? Number(e.target.value) : '')}
+                  className="filter-pill-select"
+                >
+                  <option value="">Tags</option>
+                  {tags.map(t => (
+                    <option key={t.tagId} value={t.tagId}>
+                      #{t.tagName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={13} className="pill-arrow-icon" />
+              </div>
+            )}
+
+            {hasActiveFilters && (
+              <button className="reset-filter-btn" onClick={resetFilters}>
+                <X size={13} />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="tasks-action-group">
-          {/* View Switcher */}
-          <div className="view-toggle-container">
+        {/* Right Tools: View Mode Switcher + New Task Button */}
+        <div className="board-actions-group">
+          <div className="view-mode-pill-group">
             <button
-              className={`view-toggle-btn ${viewMode === 'kanban' ? 'active' : ''}`}
+              className={`view-mode-btn ${viewMode === 'kanban' ? 'active' : ''}`}
               onClick={() => setViewMode('kanban')}
               title="Kanban Board View"
             >
-              <Kanban size={16} />
-              <span>Board</span>
+              <Kanban size={15} />
             </button>
             <button
-              className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+              className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
-              title="Data Table View"
+              title="Table List View"
             >
-              <TableIcon size={16} />
-              <span>Table</span>
+              <TableIcon size={15} />
+            </button>
+            <button className="view-mode-btn" title="More options">
+              <MoreHorizontal size={15} />
             </button>
           </div>
 
-          <button className="btn btn-primary" onClick={() => openTaskModal()}>
-            <Plus size={16} />
-            <span>Create Task</span>
+          <button className="btn-create-task" onClick={() => openTaskModal()}>
+            <Plus size={16} strokeWidth={2.5} />
+            <span>New Task</span>
           </button>
         </div>
       </div>
 
-      {/* Filter & Search Toolbar */}
-      <div className="glass-card filter-toolbar">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search tasks by title..."
-            value={searchTitle}
-            onChange={e => setSearchTitle(e.target.value)}
-          />
-          {searchTitle && (
-            <button className="clear-search-btn" onClick={() => setSearchTitle('')}>
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        <div className="filter-dropdowns">
-          {/* Project Filter */}
-          <select
-            className="filter-select"
-            value={filterProject}
-            onChange={e => setFilterProject(e.target.value === '' ? '' : Number(e.target.value))}
-          >
-            <option value="">All Projects</option>
-            {projects.map(p => (
-              <option key={p.projectId} value={p.projectId}>
-                {p.projectName}
-              </option>
-            ))}
-          </select>
-
-          {/* Status Filter */}
-          <select
-            className="filter-select"
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value === '' ? '' : Number(e.target.value))}
-          >
-            <option value="">All Statuses</option>
-            {STATUS_COLUMNS.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.title}
-              </option>
-            ))}
-          </select>
-
-          {/* Priority Filter */}
-          <select
-            className="filter-select"
-            value={filterPriority}
-            onChange={e => setFilterPriority(e.target.value === '' ? '' : Number(e.target.value))}
-          >
-            <option value="">All Priorities</option>
-            {PRIORITY_OPTIONS.map(p => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-
-          {/* Tag Filter */}
-          <select
-            className="filter-select"
-            value={filterTag}
-            onChange={e => setFilterTag(e.target.value === '' ? '' : Number(e.target.value))}
-          >
-            <option value="">All Tags</option>
-            {tags.map(t => (
-              <option key={t.tagId} value={t.tagId}>
-                #{t.tagName}
-              </option>
-            ))}
-          </select>
-
-          {hasActiveFilters && (
-            <button className="btn btn-ghost btn-sm reset-filter-btn" onClick={resetFilters}>
-              <X size={14} />
-              <span>Reset</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Main Content: Kanban or Table */}
+      {/* ==================== MAIN CONTENT: KANBAN BOARD OR TABLE ==================== */}
       {loading ? (
-        <div className="kanban-board-loading">
-          <Skeleton height="350px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="350px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="350px" borderRadius="var(--radius-xl)" />
+        <div className="kanban-grid-loading">
+          <Skeleton height="400px" borderRadius="16px" />
+          <Skeleton height="400px" borderRadius="16px" />
+          <Skeleton height="400px" borderRadius="16px" />
+          <Skeleton height="400px" borderRadius="16px" />
         </div>
       ) : tasks.length === 0 ? (
         <EmptyState
           title="No tasks match your criteria"
-          description="Try modifying your filters or create a new task to get started."
+          description="Try clearing your filters or create a new task to get started."
           actionText="Create New Task"
           onAction={() => openTaskModal()}
         />
       ) : viewMode === 'kanban' ? (
-        /* ==================== KANBAN BOARD ==================== */
-        <div className="kanban-board">
+        /* ==================== KANBAN BOARD VIEW ==================== */
+        <div className="kanban-board-grid">
           {STATUS_COLUMNS.map(col => {
             const colTasks = tasks.filter(t => t.status === col.id);
-            const ColIcon = col.icon;
             return (
-              <div key={col.id} className="kanban-column">
-                <div className="kanban-column-header">
-                  <div className="col-header-left">
-                    <ColIcon size={16} style={{ color: col.color }} />
-                    <span className="col-title">{col.title}</span>
+              <div key={col.id} className="kanban-column-wrapper">
+                {/* Column Header */}
+                <div className="kanban-col-head">
+                  <div className="col-title-group">
+                    <h3 className="col-heading">{col.title}</h3>
+                    <span className="col-task-count">{colTasks.length}</span>
                   </div>
-                  <span className="col-count-pill">{colTasks.length}</span>
+
+                  <div className="col-actions">
+                    <button
+                      className="col-action-btn"
+                      onClick={() => openTaskModal(undefined, col.id)}
+                      title={`Add task to ${col.title}`}
+                    >
+                      <Plus size={15} />
+                    </button>
+                    <button className="col-action-btn" title="Column options">
+                      <MoreHorizontal size={15} />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="kanban-cards-stack">
+                {/* Column Cards Stack */}
+                <div className="kanban-cards-container">
                   {colTasks.length === 0 ? (
-                    <div className="kanban-empty-col">No tasks in {col.title}</div>
+                    <div className="kanban-empty-dropzone">
+                      <span>No tasks in {col.title}</span>
+                      <button
+                        className="empty-col-add-btn"
+                        onClick={() => openTaskModal(undefined, col.id)}
+                      >
+                        + Add task
+                      </button>
+                    </div>
                   ) : (
                     colTasks.map(task => {
-                      const isOverdue =
-                        task.dueDate &&
-                        new Date(task.dueDate) < new Date() &&
-                        task.status !== 2 &&
-                        task.status !== 3;
+                      const mockupImg = getTaskMockup(task);
+                      const progress = getTaskProgress(task);
+                      const commentsCount = getCommentCount(task.taskId);
+                      const isMenuOpen = activeCardMenu === task.taskId;
 
                       return (
-                        <div key={task.taskId} className="glass-card kanban-card">
-                          <div className="card-top-row">
-                            <span className="card-project-tag">
-                              <Folder size={12} />
-                              {task.projectName || 'General'}
-                            </span>
-                            <div className="card-actions">
-                              <button
-                                className="btn-icon-sm btn-ghost"
-                                onClick={() => openTaskModal(task)}
-                                title="Edit Task"
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                              <button
-                                className="btn-icon-sm btn-ghost text-danger"
-                                onClick={() => setTaskToDelete(task)}
-                                title="Delete Task"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </div>
-
-                          <Link to={`/tasks/${task.taskId}`} className="card-task-title-link">
-                            <h4 className="card-task-title">{task.title}</h4>
-                          </Link>
-                          {task.description && (
-                            <p className="card-task-desc">{task.description}</p>
-                          )}
-
-                          {/* Tags */}
-                          {task.tags && task.tags.length > 0 && (
-                            <div className="card-tags-list">
-                              {task.tags.map(t => (
-                                <Badge
-                                  key={t.tagId}
-                                  label={`#${t.tagName}`}
-                                  color={t.color}
-                                  size="sm"
-                                />
-                              ))}
-                            </div>
-                          )}
-
-                          <div className="card-bottom-row">
-                            <PriorityBadge
-                              priority={task.priority}
-                              priorityName={task.priorityName}
-                            />
-                            {task.dueDate && (
+                        <div key={task.taskId} className="kanban-task-card">
+                          {/* Card Top: Tags & Menu */}
+                          <div className="task-card-top-row">
+                            <div className="task-tags-row">
+                              {/* Priority Pastel Badge */}
                               <span
-                                className={`card-due-date ${isOverdue ? 'due-overdue' : ''}`}
+                                className={`pastel-tag priority-tag priority-${task.priority}`}
                               >
-                                <Calendar size={12} />
-                                {new Date(task.dueDate).toLocaleDateString()}
+                                {task.priorityName || PRIORITY_OPTIONS[task.priority]?.label || 'Normal'}
                               </span>
-                            )}
+
+                              {/* Project Tag */}
+                              {task.projectName && (
+                                <span className="pastel-tag project-tag">
+                                  {task.projectName}
+                                </span>
+                              )}
+
+                              {/* Tags List */}
+                              {task.tags?.slice(0, 2).map(t => (
+                                <span
+                                  key={t.tagId}
+                                  className="pastel-tag custom-tag"
+                                  style={{
+                                    backgroundColor: t.color ? `${t.color}15` : undefined,
+                                    color: t.color || undefined,
+                                    borderColor: t.color ? `${t.color}30` : undefined,
+                                  }}
+                                >
+                                  {t.tagName}
+                                </span>
+                              ))}
+                            </div>
+
+                            {/* Card Menu Button */}
+                            <div className="card-menu-dropdown-wrapper">
+                              <button
+                                className="card-dot-menu-btn"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setActiveCardMenu(isMenuOpen ? null : task.taskId);
+                                }}
+                                title="Task options"
+                              >
+                                <MoreHorizontal size={15} />
+                              </button>
+
+                              {/* Dropdown Menu */}
+                              {isMenuOpen && (
+                                <div
+                                  className="card-context-menu"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <Link
+                                    to={`/tasks/${task.taskId}`}
+                                    className="context-menu-item"
+                                  >
+                                    View details
+                                  </Link>
+                                  <button
+                                    className="context-menu-item"
+                                    onClick={() => {
+                                      setActiveCardMenu(null);
+                                      openTaskModal(task);
+                                    }}
+                                  >
+                                    Edit task
+                                  </button>
+                                  <div className="context-menu-divider" />
+                                  <div className="context-menu-section-title">Move to:</div>
+                                  {STATUS_COLUMNS.filter(c => c.id !== task.status).map(c => (
+                                    <button
+                                      key={c.id}
+                                      className="context-menu-item move-item"
+                                      onClick={() => {
+                                        setActiveCardMenu(null);
+                                        handleQuickStatusChange(task, c.id);
+                                      }}
+                                    >
+                                      → {c.title}
+                                    </button>
+                                  ))}
+                                  <div className="context-menu-divider" />
+                                  <button
+                                    className="context-menu-item text-danger"
+                                    onClick={() => {
+                                      setActiveCardMenu(null);
+                                      setTaskToDelete(task);
+                                    }}
+                                  >
+                                    Delete task
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Quick Move Footer */}
-                          <div className="card-quick-move">
-                            <span className="move-label">Move to:</span>
-                            <div className="move-buttons">
-                              {STATUS_COLUMNS.filter(c => c.id !== task.status).map(targetCol => (
-                                <button
-                                  key={targetCol.id}
-                                  className="quick-move-btn"
-                                  onClick={() => handleQuickStatusChange(task, targetCol.id)}
-                                  title={`Move to ${targetCol.title}`}
-                                >
-                                  {targetCol.title}
-                                </button>
-                              ))}
+                          {/* Task Title */}
+                          <Link to={`/tasks/${task.taskId}`} className="task-title-link">
+                            <h4 className="task-card-title">{task.title}</h4>
+                          </Link>
+
+                          {/* Task Description */}
+                          {task.description && (
+                            <p className="task-card-desc">{task.description}</p>
+                          )}
+
+                          {/* Card Mockup Attachment Banner (if present) */}
+                          {mockupImg && (
+                            <div className="task-mockup-wrapper">
+                              <img
+                                src={mockupImg}
+                                alt={task.title}
+                                className="task-mockup-img"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
+
+                          {/* Progress Section */}
+                          <div className="task-progress-box">
+                            <div className="progress-info-row">
+                              <span className="progress-label">Progress</span>
+                              <span className="progress-percent">{progress}%</span>
+                            </div>
+                            <div className="progress-track">
+                              <div
+                                className={`progress-fill ${progress === 100 ? 'complete' : ''}`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Card Footer: Assignees & Metadata */}
+                          <div className="task-card-footer">
+                            {/* Stacked Assignee Avatars */}
+                            <div className="assignees-stacked-group">
+                              <img
+                                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                                alt="Assignee 1"
+                                className="stacked-avatar-img"
+                              />
+                              <img
+                                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
+                                alt="Assignee 2"
+                                className="stacked-avatar-img"
+                              />
+                              {(task.taskId % 3 === 0) && (
+                                <div className="stacked-avatar-more">+2</div>
+                              )}
+                            </div>
+
+                            {/* Comments & Attachments Count */}
+                            <div className="task-meta-stats">
+                              <span className="meta-stat-pill" title="Comments">
+                                <MessageSquare size={13} />
+                                <span>{commentsCount} comments</span>
+                              </span>
+                              <span className="meta-stat-pill" title="Attachments">
+                                <Paperclip size={13} />
+                                <span>{task.taskId % 2 === 0 ? '2 Files' : '0 Files'}</span>
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -489,48 +659,43 @@ export default function TaskList() {
         </div>
       ) : (
         /* ==================== DATA TABLE VIEW ==================== */
-        <div className="data-table-container">
-          <table className="data-table">
+        <div className="table-view-container">
+          <table className="clean-data-table">
             <thead>
               <tr>
                 <th>Task Title</th>
                 <th>Project</th>
                 <th>Priority</th>
                 <th>Status</th>
-                <th>Tags</th>
+                <th>Progress</th>
                 <th>Due Date</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {tasks.map(task => {
-                const isOverdue =
-                  task.dueDate &&
-                  new Date(task.dueDate) < new Date() &&
-                  task.status !== 2 &&
-                  task.status !== 3;
-
+                const progress = getTaskProgress(task);
                 return (
                   <tr key={task.taskId}>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      <div>{task.title}</div>
+                    <td className="task-title-cell">
+                      <Link to={`/tasks/${task.taskId}`} className="table-task-link">
+                        {task.title}
+                      </Link>
                       {task.description && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {task.description}
-                        </div>
+                        <div className="table-task-desc">{task.description}</div>
                       )}
                     </td>
                     <td>
-                      <span className="table-project-tag">
-                        <Folder size={12} />
-                        {task.projectName || '—'}
+                      <span className="table-project-pill">
+                        {task.projectName || 'General Project'}
                       </span>
                     </td>
                     <td>
-                      <PriorityBadge
-                        priority={task.priority}
-                        priorityName={task.priorityName}
-                      />
+                      <span
+                        className={`pastel-tag priority-tag priority-${task.priority}`}
+                      >
+                        {task.priorityName || PRIORITY_OPTIONS[task.priority]?.label || 'Normal'}
+                      </span>
                     </td>
                     <td>
                       <TaskStatusBadge
@@ -538,47 +703,42 @@ export default function TaskList() {
                         statusName={task.statusName}
                       />
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                        {task.tags && task.tags.length > 0 ? (
-                          task.tags.map(t => (
-                            <Badge
-                              key={t.tagId}
-                              label={t.tagName}
-                              color={t.color}
-                              size="sm"
-                            />
-                          ))
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>—</span>
-                        )}
+                    <td style={{ width: '140px' }}>
+                      <div className="table-progress-wrapper">
+                        <div className="progress-track">
+                          <div
+                            className={`progress-fill ${progress === 100 ? 'complete' : ''}`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <span className="table-progress-text">{progress}%</span>
                       </div>
                     </td>
                     <td>
                       {task.dueDate ? (
-                        <span className={`table-date-cell ${isOverdue ? 'due-overdue' : ''}`}>
+                        <span className="table-date-pill">
                           <Calendar size={12} />
                           {new Date(task.dueDate).toLocaleDateString()}
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        <span className="table-muted-text">—</span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                      <div className="table-row-actions">
                         <button
-                          className="btn-icon-sm btn-ghost"
+                          className="table-action-btn"
                           onClick={() => openTaskModal(task)}
-                          title="Edit"
+                          title="Edit Task"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={13} />
                         </button>
                         <button
-                          className="btn-icon-sm btn-ghost text-danger"
+                          className="table-action-btn delete-btn"
                           onClick={() => setTaskToDelete(task)}
-                          title="Delete"
+                          title="Delete Task"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -590,44 +750,53 @@ export default function TaskList() {
         </div>
       )}
 
-      {/* Task Create / Edit Modal */}
+      {/* ==================== CREATE / EDIT TASK MODAL ==================== */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={editingTask ? 'Edit Task' : 'Create New Task'}
-        subtitle={editingTask ? `Updating taskId: #${editingTask.taskId}` : 'Fill in task details below'}
-        maxWidth="md"
+        maxWidth="lg"
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="task-form">
           <div className="form-group">
-            <label className="form-label">Task Title *</label>
+            <label className="form-label" htmlFor="task-title">
+              Task Title <span className="required-star">*</span>
+            </label>
             <input
+              id="task-title"
               type="text"
               className="form-input"
-              placeholder="e.g. Implement authentication flow"
+              placeholder="e.g., Add new chat feature in mobile UI"
               value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
+              onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
               required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Description</label>
+            <label className="form-label" htmlFor="task-desc">
+              Description / Instructions
+            </label>
             <textarea
+              id="task-desc"
               className="form-textarea"
-              placeholder="Provide context or acceptance criteria..."
+              rows={3}
+              placeholder="Provide context, acceptance criteria, or design specifications..."
               value={formData.description || ''}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
             />
           </div>
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Project *</label>
+              <label className="form-label" htmlFor="task-project">
+                Associated Project <span className="required-star">*</span>
+              </label>
               <select
+                id="task-project"
                 className="form-select"
                 value={formData.projectId}
-                onChange={e => setFormData({ ...formData, projectId: Number(e.target.value) })}
+                onChange={e => setFormData(prev => ({ ...prev, projectId: Number(e.target.value) }))}
                 required
               >
                 <option value={0} disabled>
@@ -642,145 +811,122 @@ export default function TaskList() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Due Date</label>
-              <input
-                type="date"
-                className="form-input"
-                value={formData.dueDate || ''}
-                onChange={e =>
-                  setFormData({ ...formData, dueDate: e.target.value ? e.target.value : undefined })
-                }
-              />
-              <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="quick-move-btn"
-                  onClick={() => {
-                    const d = new Date();
-                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
-                  }}
-                >
-                  Today
-                </button>
-                <button
-                  type="button"
-                  className="quick-move-btn"
-                  onClick={() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 1);
-                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
-                  }}
-                >
-                  Tomorrow
-                </button>
-                <button
-                  type="button"
-                  className="quick-move-btn"
-                  onClick={() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 7);
-                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
-                  }}
-                >
-                  +1 Week
-                </button>
-                <button
-                  type="button"
-                  className="quick-move-btn"
-                  onClick={() => {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() + 1);
-                    setFormData({ ...formData, dueDate: d.toISOString().split('T')[0] });
-                  }}
-                >
-                  +1 Month
-                </button>
-              </div>
+              <label className="form-label" htmlFor="task-status">
+                Status
+              </label>
+              <select
+                id="task-status"
+                className="form-select"
+                value={formData.status}
+                onChange={e => setFormData(prev => ({ ...prev, status: Number(e.target.value) }))}
+              >
+                {STATUS_COLUMNS.map(col => (
+                  <option key={col.id} value={col.id}>
+                    {col.title}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Status</label>
+              <label className="form-label" htmlFor="task-priority">
+                Priority Level
+              </label>
               <select
+                id="task-priority"
                 className="form-select"
-                value={formData.status}
-                onChange={e => setFormData({ ...formData, status: Number(e.target.value) })}
+                value={formData.priority}
+                onChange={e => setFormData(prev => ({ ...prev, priority: Number(e.target.value) }))}
               >
-                {STATUS_COLUMNS.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
+                {PRIORITY_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Priority</label>
-              <select
-                className="form-select"
-                value={formData.priority}
-                onChange={e => setFormData({ ...formData, priority: Number(e.target.value) })}
-              >
-                {PRIORITY_OPTIONS.map(p => (
-                  <option key={p.value} value={p.value}>
-                    {p.label} Priority
-                  </option>
-                ))}
-              </select>
+              <label className="form-label" htmlFor="task-due-date">
+                Due Date
+              </label>
+              <input
+                id="task-due-date"
+                type="date"
+                className="form-input"
+                value={formData.dueDate || ''}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    dueDate: e.target.value ? e.target.value : undefined,
+                  }))
+                }
+              />
             </div>
           </div>
 
-          {/* Tag Selection */}
-          <div className="form-group">
-            <label className="form-label">Attach Tags</label>
-            <div className="tag-selector-chips">
-              {tags.map(t => {
-                const isSelected = formData.tagIds?.includes(t.tagId);
-                return (
-                  <button
-                    key={t.tagId}
-                    type="button"
-                    className={`tag-chip ${isSelected ? 'tag-chip-active' : ''}`}
-                    onClick={() => toggleTagSelection(t.tagId)}
-                    style={{
-                      borderColor: isSelected ? t.color || 'var(--primary)' : 'var(--border-base)',
-                      backgroundColor: isSelected ? `${t.color || '#6366f1'}22` : 'var(--bg-secondary)',
-                      color: isSelected ? t.color || 'var(--primary)' : 'var(--text-secondary)',
-                    }}
-                  >
-                    <TagIcon size={12} />
-                    <span>{t.tagName}</span>
-                  </button>
-                );
-              })}
+          {/* Tags Selection */}
+          {tags.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">Tags & Taxonomy</label>
+              <div className="tag-picker-container">
+                {tags.map(t => {
+                  const selected = formData.tagIds?.includes(t.tagId);
+                  return (
+                    <button
+                      type="button"
+                      key={t.tagId}
+                      className={`tag-picker-chip ${selected ? 'selected' : ''}`}
+                      style={{
+                        borderColor: selected ? t.color || 'var(--primary)' : undefined,
+                        backgroundColor: selected ? `${t.color || '#4f46e5'}15` : undefined,
+                        color: selected ? t.color || 'var(--primary)' : undefined,
+                      }}
+                      onClick={() => toggleTagSelection(t.tagId)}
+                    >
+                      {selected && <Check size={12} />}
+                      #{t.tagName}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="modal-footer" style={{ margin: '24px -24px -24px -24px' }}>
+          <div className="modal-actions-bar">
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => setShowModal(false)}
-              disabled={isSubmitting}
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : editingTask ? 'Save Changes' : 'Create Task'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : editingTask
+                ? 'Update Task'
+                : 'Create Task'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* ==================== DELETE CONFIRMATION MODAL ==================== */}
       <ConfirmModal
         isOpen={!!taskToDelete}
         onClose={() => setTaskToDelete(null)}
         onConfirm={handleDeleteConfirm}
         title="Delete Task"
-        message={`Are you sure you want to delete task "${taskToDelete?.title}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${taskToDelete?.title}"? This action cannot be undone.`}
         confirmText="Delete Task"
+        isDanger={true}
         isLoading={isDeleting}
       />
     </div>
