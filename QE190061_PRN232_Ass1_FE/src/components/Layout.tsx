@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   CheckSquare,
-  MessageSquare,
-  BarChart3,
-  Calendar,
   FolderKanban,
   Users,
-  Settings,
+  Tag,
   Search,
   Plus,
   Bell,
@@ -37,7 +34,6 @@ export default function Layout({ children }: LayoutProps) {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const location = useLocation();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,16 +46,14 @@ export default function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Primary navigation matching the reference layout
+  // Clean, purposeful navigation representing all real project modules
   const mainNavItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-    { path: '/search?tab=messages', label: 'Messaging', icon: MessageSquare },
-    { path: '/search?tab=analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/tasks?view=calendar', label: 'Calendar', icon: Calendar },
-    { path: '/projects', label: 'Project', icon: FolderKanban },
+    { path: '/projects', label: 'Projects', icon: FolderKanban },
     { path: '/departments', label: 'Teams', icon: Users },
-    { path: '/tasks/manage', label: 'Settings', icon: Settings },
+    { path: '/tags', label: 'Tags', icon: Tag },
+    { path: '/search', label: 'Search Hub', icon: Search },
   ];
 
   return (
@@ -108,25 +102,17 @@ export default function Layout({ children }: LayoutProps) {
           </button>
         </div>
 
-        {/* Sidebar Nav Links */}
+        {/* Sidebar Nav Links with Exact Single-Item Active State */}
         <nav className="sidebar-nav">
           {mainNavItems.map(item => {
             const Icon = item.icon;
-            // Check active based on route
-            const isTasks = item.path.startsWith('/tasks') && location.pathname.startsWith('/tasks');
-            const isProjects = item.path === '/projects' && location.pathname.startsWith('/projects');
-            const isDepts = item.path === '/departments' && location.pathname.startsWith('/departments');
-            const isDashboard = item.path === '/' && location.pathname === '/';
-            const isSearch = item.path.startsWith('/search') && location.pathname.startsWith('/search');
-            const isActive = isDashboard || isTasks || isProjects || isDepts || isSearch;
-
             return (
               <NavLink
                 key={item.label}
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
-                className={({ isActive: exactActive }) =>
-                  `nav-item-link ${exactActive || isActive ? 'nav-item-active' : ''}`
+                className={({ isActive }) =>
+                  `nav-item-link ${isActive ? 'nav-item-active' : ''}`
                 }
                 title={collapsed ? item.label : undefined}
                 end={item.path === '/'}
