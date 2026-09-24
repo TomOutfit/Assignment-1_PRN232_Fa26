@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/Layout';
+import { warmupBackend } from './services/api';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -20,6 +22,10 @@ import TagList from './pages/TagList';
 import SearchPage from './pages/SearchPage';
 
 export default function App() {
+  useEffect(() => {
+    warmupBackend();
+  }, []);
+
   return (
     <ThemeProvider>
       <ToastProvider>
