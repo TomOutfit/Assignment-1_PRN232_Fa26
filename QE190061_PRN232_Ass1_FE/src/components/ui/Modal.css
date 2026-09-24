@@ -12,6 +12,7 @@
   justify-content: center;
   z-index: 1000;
   padding: 16px;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-container {
@@ -25,6 +26,7 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .modal-sm { max-width: 420px; }
