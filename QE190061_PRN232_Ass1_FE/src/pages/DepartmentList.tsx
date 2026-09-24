@@ -7,16 +7,14 @@ import {
   Edit2,
   Trash2,
   X,
-  Layers,
   LayoutGrid,
   Table as TableIcon,
-  Settings,
+  FolderKanban,
 } from 'lucide-react';
 import { departmentApi } from '../services/api';
 import type { Department, CreateDepartmentDto, UpdateDepartmentDto } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
-import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
@@ -26,7 +24,7 @@ export default function DepartmentList() {
   const toast = useToast();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [searchName, setSearchName] = useState('');
 
   // Modals
@@ -125,248 +123,263 @@ export default function DepartmentList() {
   };
 
   return (
-    <div className="departments-page">
-      {/* Header */}
-      <div className="departments-header-bar">
+    <div className="departments-page-container">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="page-header-bar">
         <div>
-          <h2 className="page-heading">Department Management (CRUD)</h2>
-          <p className="page-desc">Create, configure, and maintain organizational units.</p>
+          <h1 className="page-main-title">Departments & Teams</h1>
+          <p className="page-sub-title">
+            Configure organizational units, team ownerships, and functional divisions.
+          </p>
         </div>
 
-        <div className="departments-action-group">
-          {/* Segmented Mode */}
-          <div className="view-toggle-container">
-            <Link to="/departments" className="view-toggle-btn">
-              <Building2 size={15} />
-              <span>Cards</span>
-            </Link>
-            <Link to="/departments/manage" className="view-toggle-btn active">
-              <Settings size={15} />
-              <span>Manage</span>
-            </Link>
-          </div>
-
-          <div className="view-toggle-container">
+        <div className="page-actions-row">
+          {/* View Mode Toggle */}
+          <div className="view-mode-pill-group">
             <button
-              className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-              title="Grid Cards View"
-            >
-              <LayoutGrid size={15} />
-            </button>
-            <button
-              className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+              className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
               title="Table View"
             >
               <TableIcon size={15} />
             </button>
+            <button
+              className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid Cards View"
+            >
+              <LayoutGrid size={15} />
+            </button>
           </div>
 
-          <button className="btn btn-primary" onClick={() => openDeptModal()}>
-            <Plus size={16} />
-            <span>Add Department</span>
+          <button className="btn-primary-action" onClick={() => openDeptModal()}>
+            <Plus size={16} strokeWidth={2.5} />
+            <span>New Department</span>
           </button>
         </div>
       </div>
 
-      {/* Search Toolbar */}
-      <div className="glass-card filter-toolbar">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
+      {/* ==================== SEARCH BAR ==================== */}
+      <div className="filter-toolbar-card">
+        <div className="search-pill-box">
+          <Search size={15} className="search-pill-icon" />
           <input
             type="text"
-            className="search-input"
+            className="search-pill-input"
             placeholder="Search departments by name..."
             value={searchName}
             onChange={e => setSearchName(e.target.value)}
           />
           {searchName && (
-            <button className="clear-search-btn" onClick={() => setSearchName('')}>
+            <button className="clear-pill-btn" onClick={() => setSearchName('')}>
               <X size={14} />
             </button>
           )}
         </div>
+
+        <div className="dept-summary-pill">
+          <span>{departments.length} Units Active</span>
+        </div>
       </div>
 
-      {/* Main Content */}
+      {/* ==================== CONTENT VIEW ==================== */}
       {loading ? (
-        <div className="departments-grid">
-          <Skeleton height="180px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="180px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="180px" borderRadius="var(--radius-xl)" />
+        <div className="departments-grid-layout">
+          <Skeleton height="180px" borderRadius="14px" />
+          <Skeleton height="180px" borderRadius="14px" />
+          <Skeleton height="180px" borderRadius="14px" />
         </div>
       ) : departments.length === 0 ? (
         <EmptyState
           title="No departments found"
-          description="Create your first department to start assigning projects."
-          actionText="Add Department"
+          description="Create your first department or adjust your search keywords."
+          actionText="Create Department"
           onAction={() => openDeptModal()}
         />
-      ) : viewMode === 'grid' ? (
-        /* Grid Cards */
-        <div className="departments-grid">
+      ) : viewMode === 'table' ? (
+        /* ==================== CLEAN DATA TABLE ==================== */
+        <div className="clean-table-container">
+          <table className="clean-saas-table">
+            <thead>
+              <tr>
+                <th style={{ width: '30%' }}>Department Name</th>
+                <th style={{ width: '40%' }}>Description</th>
+                <th style={{ width: '15%' }}>Projects Count</th>
+                <th style={{ width: '15%', textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {departments.map(dept => {
+                const projectCount = dept.projects ? dept.projects.length : 0;
+                return (
+                  <tr key={dept.departmentId}>
+                    <td>
+                      <div className="table-dept-name-cell">
+                        <Link to={`/departments/${dept.departmentId}`} className="table-dept-title-link">
+                          <Building2 size={14} className="cell-icon" />
+                          <span>{dept.departmentName}</span>
+                        </Link>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="table-desc-cell">
+                        {dept.departmentDescription || 'No description provided.'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="table-stat-badge">
+                        <FolderKanban size={13} className="cell-icon" />
+                        <span>{projectCount} Projects</span>
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="table-actions-cell">
+                        <button
+                          className="table-icon-btn"
+                          onClick={() => openDeptModal(dept)}
+                          title="Edit Department"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          className="table-icon-btn delete-btn"
+                          onClick={() => setDeptToDelete(dept)}
+                          title="Delete Department"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        /* ==================== CLEAN CARDS GRID ==================== */
+        <div className="departments-grid-layout">
           {departments.map(dept => {
             const projectCount = dept.projects ? dept.projects.length : 0;
+
             return (
-              <div key={dept.departmentId} className="glass-card dept-card">
-                <div className="dept-card-header">
+              <div key={dept.departmentId} className="dept-saas-card">
+                <div className="dept-card-top">
                   <div className="dept-icon-box">
                     <Building2 size={20} />
                   </div>
-                  <div className="dept-actions">
+                  <div className="card-icon-actions">
                     <button
-                      className="btn-icon-sm btn-ghost"
+                      className="table-icon-btn"
                       onClick={() => openDeptModal(dept)}
-                      title="Edit"
+                      title="Edit Department"
                     >
                       <Edit2 size={13} />
                     </button>
                     <button
-                      className="btn-icon-sm btn-ghost text-danger"
+                      className="table-icon-btn delete-btn"
                       onClick={() => setDeptToDelete(dept)}
-                      title="Delete"
+                      title="Delete Department"
                     >
                       <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
 
-                <div className="dept-card-body">
-                  <h3 className="dept-card-title">{dept.departmentName}</h3>
-                  <p className="dept-card-desc">
-                    {dept.departmentDescription || 'No description provided.'}
-                  </p>
-                </div>
+                <Link to={`/departments/${dept.departmentId}`} className="card-title-link">
+                  <h3 className="card-main-title">{dept.departmentName}</h3>
+                </Link>
+
+                <p className="card-desc-text">
+                  {dept.departmentDescription || 'Operational department.'}
+                </p>
 
                 <div className="dept-card-footer">
-                  <div className="dept-projects-count">
-                    <Layers size={13} />
-                    <span>{projectCount} Projects</span>
-                  </div>
-                  <Badge
-                    label={dept.isActive ? 'Active' : 'Inactive'}
-                    variant={dept.isActive ? 'success' : 'neutral'}
-                    size="sm"
-                  />
+                  <span className="table-stat-badge">
+                    <FolderKanban size={13} />
+                    <span>{projectCount} Active Projects</span>
+                  </span>
+                  <Link to={`/departments/${dept.departmentId}`} className="card-view-link">
+                    Explore →
+                  </Link>
                 </div>
               </div>
             );
           })}
         </div>
-      ) : (
-        /* Table View */
-        <div className="data-table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Department Name</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {departments.map(dept => (
-                <tr key={dept.departmentId}>
-                  <td style={{ fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Building2 size={16} color="var(--primary)" />
-                      <span>{dept.departmentName}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
-                      {dept.departmentDescription || '—'}
-                    </span>
-                  </td>
-                  <td>
-                    <Badge
-                      label={dept.isActive ? 'Active' : 'Inactive'}
-                      variant={dept.isActive ? 'success' : 'neutral'}
-                      size="sm"
-                    />
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                      <button
-                        className="btn-icon-sm btn-ghost"
-                        onClick={() => openDeptModal(dept)}
-                        title="Edit"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        className="btn-icon-sm btn-ghost text-danger"
-                        onClick={() => setDeptToDelete(dept)}
-                        title="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
-      {/* Department Modal */}
+      {/* ==================== CREATE / EDIT MODAL ==================== */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingDept ? 'Edit Department' : 'Add Department'}
-        subtitle={editingDept ? `Editing #${editingDept.departmentId}` : 'Create a new organizational unit'}
+        title={editingDept ? 'Edit Department' : 'Create New Department'}
         maxWidth="md"
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="task-form">
           <div className="form-group">
-            <label className="form-label">Department Name *</label>
+            <label className="form-label" htmlFor="dept-name">
+              Department Name <span className="required-star">*</span>
+            </label>
             <input
+              id="dept-name"
               type="text"
               className="form-input"
-              placeholder="e.g. Engineering, Marketing, Operations"
+              placeholder="e.g., Engineering, Design, Product"
               value={formData.departmentName}
-              onChange={e => setFormData({ ...formData, departmentName: e.target.value })}
+              onChange={e => setFormData(prev => ({ ...prev, departmentName: e.target.value }))}
               required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Description</label>
+            <label className="form-label" htmlFor="dept-desc">
+              Description & Purpose
+            </label>
             <textarea
+              id="dept-desc"
               className="form-textarea"
-              placeholder="Department responsibilities and purpose..."
+              rows={3}
+              placeholder="Briefly describe the unit's responsibilities and mandate..."
               value={formData.departmentDescription}
-              onChange={e => setFormData({ ...formData, departmentDescription: e.target.value })}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, departmentDescription: e.target.value }))
+              }
             />
           </div>
 
-          <div className="modal-footer" style={{ margin: '24px -24px -24px -24px' }}>
+          <div className="modal-actions-bar">
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => setShowModal(false)}
-              disabled={isSubmitting}
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : editingDept ? 'Save Changes' : 'Create Department'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : editingDept
+                ? 'Update Department'
+                : 'Create Department'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* ==================== DELETE CONFIRM MODAL ==================== */}
       <ConfirmModal
         isOpen={!!deptToDelete}
         onClose={() => setDeptToDelete(null)}
         onConfirm={handleDeleteConfirm}
         title="Delete Department"
-        message={`Are you sure you want to delete "${deptToDelete?.departmentName}"? Projects assigned to this department might be affected.`}
+        message={`Are you sure you want to delete "${deptToDelete?.departmentName}"? Projects assigned to this department must be reassigned first.`}
         confirmText="Delete Department"
+        isDanger={true}
         isLoading={isDeleting}
       />
     </div>

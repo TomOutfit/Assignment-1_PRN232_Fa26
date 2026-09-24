@@ -10,25 +10,23 @@ import {
   X,
   LayoutGrid,
   Table as TableIcon,
-  FolderKanban,
-  Settings,
+  ChevronDown,
 } from 'lucide-react';
 import { projectApi, departmentApi } from '../services/api';
 import type { Project, CreateProjectDto, UpdateProjectDto, Department } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
-import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
 import './ProjectList.css';
 
 const PROJECT_STATUS_OPTIONS = [
-  { value: 0, label: 'Planning', color: '#64748b' },
-  { value: 1, label: 'In Progress', color: '#3b82f6' },
-  { value: 2, label: 'Completed', color: '#10b981' },
-  { value: 3, label: 'On Hold', color: '#f59e0b' },
-  { value: 4, label: 'Cancelled', color: '#ef4444' },
+  { value: 0, label: 'Planning', color: '#64748b', bg: '#f1f5f9' },
+  { value: 1, label: 'In Progress', color: '#3b82f6', bg: '#eff6ff' },
+  { value: 2, label: 'Completed', color: '#10b981', bg: '#ecfdf5' },
+  { value: 3, label: 'On Hold', color: '#f59e0b', bg: '#fffbeb' },
+  { value: 4, label: 'Cancelled', color: '#ef4444', bg: '#fef2f2' },
 ];
 
 export default function ProjectList() {
@@ -37,8 +35,8 @@ export default function ProjectList() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // View Mode: 'grid' | 'table'
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  // View Mode: 'table' | 'grid'
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Filters
   const [searchName, setSearchName] = useState('');
@@ -127,7 +125,11 @@ export default function ProjectList() {
       toast.warning('Please select an owning department.');
       return;
     }
-    if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
+    if (
+      formData.startDate &&
+      formData.endDate &&
+      new Date(formData.startDate) > new Date(formData.endDate)
+    ) {
       toast.warning('Start date cannot be after end date.');
       return;
     }
@@ -167,311 +169,326 @@ export default function ProjectList() {
     }
   };
 
-  const getStatusBadge = (status: number, name?: string) => {
-    const config = PROJECT_STATUS_OPTIONS.find(s => s.value === status);
-    return <Badge label={name || config?.label || `Status ${status}`} color={config?.color} />;
+  const formatTimeline = (start?: string, end?: string) => {
+    if (!start) return '—';
+    const s = new Date(start).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    if (!end) return `${s} → Ongoing`;
+    const e = new Date(end).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return `${s} → ${e}`;
   };
 
+  const hasActiveFilters = searchName || filterDepartment !== '' || filterStatus !== '';
+
   return (
-    <div className="projects-page">
-      {/* Header */}
-      <div className="projects-header-bar">
+    <div className="projects-page-container">
+      {/* ==================== TOP BAR ==================== */}
+      <div className="page-header-bar">
         <div>
-          <h2 className="page-heading">Project Management (CRUD)</h2>
-          <p className="page-desc">Oversee initiatives, milestones, and cross-departmental tasks.</p>
+          <h1 className="page-main-title">Projects</h1>
+          <p className="page-sub-title">
+            Oversee strategic initiatives, deliverables, timelines, and departmental ownership.
+          </p>
         </div>
 
-        <div className="projects-action-group">
-          {/* Segmented Switcher */}
-          <div className="view-toggle-container">
-            <Link to="/projects" className="view-toggle-btn">
-              <FolderKanban size={15} />
-              <span>Cards</span>
-            </Link>
-            <Link to="/projects/manage" className="view-toggle-btn active">
-              <Settings size={15} />
-              <span>Manage</span>
-            </Link>
-          </div>
-
-          <div className="view-toggle-container">
+        <div className="page-actions-row">
+          {/* View Mode Toggle */}
+          <div className="view-mode-pill-group">
             <button
-              className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-              title="Grid Cards View"
-            >
-              <LayoutGrid size={15} />
-            </button>
-            <button
-              className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+              className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
               onClick={() => setViewMode('table')}
               title="Table View"
             >
               <TableIcon size={15} />
             </button>
+            <button
+              className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Grid Cards View"
+            >
+              <LayoutGrid size={15} />
+            </button>
           </div>
 
-          <button className="btn btn-primary" onClick={() => openProjectModal()}>
-            <Plus size={16} />
+          <button className="btn-primary-action" onClick={() => openProjectModal()}>
+            <Plus size={16} strokeWidth={2.5} />
             <span>New Project</span>
           </button>
         </div>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="glass-card filter-toolbar">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
+      {/* ==================== FILTER TOOLBAR ==================== */}
+      <div className="filter-toolbar-card">
+        <div className="search-pill-box">
+          <Search size={15} className="search-pill-icon" />
           <input
             type="text"
-            className="search-input"
+            className="search-pill-input"
             placeholder="Search projects by name..."
             value={searchName}
             onChange={e => setSearchName(e.target.value)}
           />
           {searchName && (
-            <button className="clear-search-btn" onClick={() => setSearchName('')}>
+            <button className="clear-pill-btn" onClick={() => setSearchName('')}>
               <X size={14} />
             </button>
           )}
         </div>
 
-        <div className="filter-dropdowns">
-          <select
-            className="filter-select"
-            value={filterDepartment}
-            onChange={e => setFilterDepartment(e.target.value === '' ? '' : Number(e.target.value))}
-          >
-            <option value="">All Departments</option>
-            {departments.map(d => (
-              <option key={d.departmentId} value={d.departmentId}>
-                {d.departmentName}
-              </option>
-            ))}
-          </select>
+        <div className="filter-pills-wrap">
+          {/* Department Filter */}
+          <div className="pill-dropdown-box">
+            <select
+              className="pill-select-input"
+              value={filterDepartment}
+              onChange={e => setFilterDepartment(e.target.value === '' ? '' : Number(e.target.value))}
+            >
+              <option value="">All Departments</option>
+              {departments.map(d => (
+                <option key={d.departmentId} value={d.departmentId}>
+                  {d.departmentName}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={13} className="pill-dropdown-arrow" />
+          </div>
 
-          <select
-            className="filter-select"
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value === '' ? '' : Number(e.target.value))}
-          >
-            <option value="">All Statuses</option>
-            {PROJECT_STATUS_OPTIONS.map(s => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          {/* Status Filter */}
+          <div className="pill-dropdown-box">
+            <select
+              className="pill-select-input"
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value === '' ? '' : Number(e.target.value))}
+            >
+              <option value="">All Statuses</option>
+              {PROJECT_STATUS_OPTIONS.map(s => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={13} className="pill-dropdown-arrow" />
+          </div>
 
-          {(searchName || filterDepartment !== '' || filterStatus !== '') && (
+          {hasActiveFilters && (
             <button
-              className="btn btn-ghost btn-sm reset-filter-btn"
+              className="reset-filter-pill-btn"
               onClick={() => {
                 setSearchName('');
                 setFilterDepartment('');
                 setFilterStatus('');
               }}
             >
-              <X size={14} />
+              <X size={13} />
               <span>Reset</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Main View */}
+      {/* ==================== CONTENT SECTION ==================== */}
       {loading ? (
-        <div className="projects-grid">
-          <Skeleton height="200px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="200px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="200px" borderRadius="var(--radius-xl)" />
+        <div className="projects-grid-layout">
+          <Skeleton height="220px" borderRadius="14px" />
+          <Skeleton height="220px" borderRadius="14px" />
+          <Skeleton height="220px" borderRadius="14px" />
         </div>
       ) : projects.length === 0 ? (
         <EmptyState
           title="No projects found"
-          description="Create your first project or adjust your search filters."
-          actionText="Create Project"
+          description="Create your first strategic initiative or adjust your filters."
+          actionText="Create New Project"
           onAction={() => openProjectModal()}
         />
-      ) : viewMode === 'grid' ? (
-        /* Grid View */
-        <div className="projects-grid">
+      ) : viewMode === 'table' ? (
+        /* ==================== MODERN DATA TABLE ==================== */
+        <div className="clean-table-container">
+          <table className="clean-saas-table">
+            <thead>
+              <tr>
+                <th style={{ width: '32%' }}>Project Name</th>
+                <th style={{ width: '18%' }}>Department</th>
+                <th style={{ width: '15%' }}>Status</th>
+                <th style={{ width: '20%' }}>Timeline</th>
+                <th style={{ width: '15%', textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map(proj => {
+                return (
+                  <tr key={proj.projectId}>
+                    <td>
+                      <div className="table-project-name-cell">
+                        <Link to={`/projects/${proj.projectId}`} className="table-project-title-link">
+                          {proj.projectName}
+                        </Link>
+                        {proj.description && (
+                          <p className="table-project-desc">{proj.description}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className="table-dept-pill">
+                        <Building2 size={13} className="cell-icon" />
+                        <span>{proj.departmentName || 'Unassigned'}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`pastel-tag status-tag status-${proj.status}`}>
+                        {proj.statusName || PROJECT_STATUS_OPTIONS[proj.status]?.label || 'Active'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="table-date-cell">
+                        <Calendar size={13} className="cell-icon" />
+                        <span>{formatTimeline(proj.startDate, proj.endDate)}</span>
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="table-actions-cell">
+                        <button
+                          className="table-icon-btn"
+                          onClick={() => openProjectModal(proj)}
+                          title="Edit Project"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          className="table-icon-btn delete-btn"
+                          onClick={() => setProjectToDelete(proj)}
+                          title="Delete Project"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        /* ==================== MODERN CARDS GRID ==================== */
+        <div className="projects-grid-layout">
           {projects.map(proj => {
             const taskCount = proj.tasks ? proj.tasks.length : 0;
-            const completedTaskCount = proj.tasks ? proj.tasks.filter(t => t.status === 2).length : 0;
-            const progress = taskCount > 0 ? Math.round((completedTaskCount / taskCount) * 100) : 0;
+            const completedCount = proj.tasks
+              ? proj.tasks.filter(t => t.status === 2).length
+              : 0;
+            const percent = taskCount > 0 ? Math.round((completedCount / taskCount) * 100) : 0;
 
             return (
-              <div key={proj.projectId} className="glass-card project-card">
-                <div className="proj-card-header">
-                  <div className="proj-dept-badge">
-                    <Building2 size={12} />
+              <div key={proj.projectId} className="project-saas-card">
+                <div className="card-top-header">
+                  <div className="card-dept-tag">
+                    <Building2 size={13} />
                     <span>{proj.departmentName}</span>
                   </div>
-                  <div className="proj-actions">
+                  <span className={`pastel-tag status-tag status-${proj.status}`}>
+                    {proj.statusName}
+                  </span>
+                </div>
+
+                <Link to={`/projects/${proj.projectId}`} className="card-title-link">
+                  <h3 className="card-main-title">{proj.projectName}</h3>
+                </Link>
+
+                {proj.description && (
+                  <p className="card-desc-text">{proj.description}</p>
+                )}
+
+                <div className="card-timeline-row">
+                  <Calendar size={13} />
+                  <span>{formatTimeline(proj.startDate, proj.endDate)}</span>
+                </div>
+
+                <div className="card-progress-section">
+                  <div className="progress-info-line">
+                    <span>Deliverables ({completedCount}/{taskCount})</span>
+                    <span>{percent}%</span>
+                  </div>
+                  <div className="card-progress-track">
+                    <div
+                      className={`card-progress-fill ${percent === 100 ? 'done' : ''}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="card-bottom-actions">
+                  <Link to={`/projects/${proj.projectId}`} className="card-view-link">
+                    View Details →
+                  </Link>
+                  <div className="card-icon-actions">
                     <button
-                      className="btn-icon-sm btn-ghost"
+                      className="table-icon-btn"
                       onClick={() => openProjectModal(proj)}
-                      title="Edit"
+                      title="Edit Project"
                     >
                       <Edit2 size={13} />
                     </button>
                     <button
-                      className="btn-icon-sm btn-ghost text-danger"
+                      className="table-icon-btn delete-btn"
                       onClick={() => setProjectToDelete(proj)}
-                      title="Delete"
+                      title="Delete Project"
                     >
                       <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
-
-                <div className="proj-card-body">
-                  <h3 className="proj-card-title">{proj.projectName}</h3>
-                  {proj.description && <p className="proj-card-desc">{proj.description}</p>}
-                </div>
-
-                {/* Progress bar if tasks exist */}
-                {taskCount > 0 && (
-                  <div className="proj-progress-section">
-                    <div className="proj-progress-header">
-                      <span>Tasks Progress</span>
-                      <span>
-                        {completedTaskCount}/{taskCount} ({progress}%)
-                      </span>
-                    </div>
-                    <div className="progress-track">
-                      <div
-                        className="progress-fill"
-                        style={{ width: `${progress}%`, background: 'var(--primary)' }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="proj-card-footer">
-                  <div className="proj-dates">
-                    <Calendar size={12} />
-                    <span>
-                      {new Date(proj.startDate).toLocaleDateString()}
-                      {proj.endDate ? ` → ${new Date(proj.endDate).toLocaleDateString()}` : ' (Ongoing)'}
-                    </span>
-                  </div>
-                  {getStatusBadge(proj.status, proj.statusName)}
-                </div>
               </div>
             );
           })}
         </div>
-      ) : (
-        /* Table View */
-        <div className="data-table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Project Name</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Timeline</th>
-                <th>Active</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map(proj => (
-                <tr key={proj.projectId}>
-                  <td style={{ fontWeight: 600 }}>
-                    <div>{proj.projectName}</div>
-                    {proj.description && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {proj.description}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <span className="table-project-tag">
-                      <Building2 size={12} />
-                      {proj.departmentName}
-                    </span>
-                  </td>
-                  <td>{getStatusBadge(proj.status, proj.statusName)}</td>
-                  <td>
-                    <span className="table-date-cell">
-                      <Calendar size={12} />
-                      {new Date(proj.startDate).toLocaleDateString()}
-                      {proj.endDate ? ` → ${new Date(proj.endDate).toLocaleDateString()}` : ''}
-                    </span>
-                  </td>
-                  <td>
-                    <Badge
-                      label={proj.isActive ? 'Active' : 'Inactive'}
-                      variant={proj.isActive ? 'success' : 'neutral'}
-                      size="sm"
-                    />
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                      <button
-                        className="btn-icon-sm btn-ghost"
-                        onClick={() => openProjectModal(proj)}
-                        title="Edit"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        className="btn-icon-sm btn-ghost text-danger"
-                        onClick={() => setProjectToDelete(proj)}
-                        title="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       )}
 
-      {/* Project Create / Edit Modal */}
+      {/* ==================== PROJECT CREATE / EDIT MODAL ==================== */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingProject ? 'Edit Project' : 'New Project'}
-        subtitle={editingProject ? `Editing #${editingProject.projectId}` : 'Define project details'}
-        maxWidth="md"
+        title={editingProject ? 'Edit Project' : 'Create New Project'}
+        maxWidth="lg"
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="task-form">
           <div className="form-group">
-            <label className="form-label">Project Name *</label>
+            <label className="form-label" htmlFor="proj-name">
+              Project Name <span className="required-star">*</span>
+            </label>
             <input
+              id="proj-name"
               type="text"
               className="form-input"
-              placeholder="e.g. Mobile App Redesign"
+              placeholder="e.g., Mobile App v2 Redesign"
               value={formData.projectName}
-              onChange={e => setFormData({ ...formData, projectName: e.target.value })}
+              onChange={e => setFormData(prev => ({ ...prev, projectName: e.target.value }))}
               required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Description</label>
+            <label className="form-label" htmlFor="proj-desc">
+              Description & Objectives
+            </label>
             <textarea
+              id="proj-desc"
               className="form-textarea"
-              placeholder="Brief summary of project scope..."
+              rows={3}
+              placeholder="Outline project goals, scope, and key deliverables..."
               value={formData.description || ''}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
             />
           </div>
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Department *</label>
+              <label className="form-label" htmlFor="proj-dept">
+                Owning Department <span className="required-star">*</span>
+              </label>
               <select
+                id="proj-dept"
                 className="form-select"
                 value={formData.departmentId}
-                onChange={e => setFormData({ ...formData, departmentId: Number(e.target.value) })}
+                onChange={e => setFormData(prev => ({ ...prev, departmentId: Number(e.target.value) }))}
                 required
               >
                 <option value={0} disabled>
@@ -486,15 +503,18 @@ export default function ProjectList() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Status</label>
+              <label className="form-label" htmlFor="proj-status">
+                Status
+              </label>
               <select
+                id="proj-status"
                 className="form-select"
                 value={formData.status}
-                onChange={e => setFormData({ ...formData, status: Number(e.target.value) })}
+                onChange={e => setFormData(prev => ({ ...prev, status: Number(e.target.value) }))}
               >
-                {PROJECT_STATUS_OPTIONS.map(s => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
+                {PROJECT_STATUS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
@@ -503,53 +523,70 @@ export default function ProjectList() {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Start Date *</label>
+              <label className="form-label" htmlFor="proj-start">
+                Start Date <span className="required-star">*</span>
+              </label>
               <input
+                id="proj-start"
                 type="date"
                 className="form-input"
                 value={formData.startDate}
-                onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Target End Date</label>
+              <label className="form-label" htmlFor="proj-end">
+                Target End Date
+              </label>
               <input
+                id="proj-end"
                 type="date"
                 className="form-input"
                 value={formData.endDate || ''}
                 onChange={e =>
-                  setFormData({ ...formData, endDate: e.target.value ? e.target.value : undefined })
+                  setFormData(prev => ({
+                    ...prev,
+                    endDate: e.target.value ? e.target.value : undefined,
+                  }))
                 }
               />
             </div>
           </div>
 
-          <div className="modal-footer" style={{ margin: '24px -24px -24px -24px' }}>
+          <div className="modal-actions-bar">
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => setShowModal(false)}
-              disabled={isSubmitting}
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : editingProject ? 'Save Changes' : 'Create Project'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : editingProject
+                ? 'Update Project'
+                : 'Create Project'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* ==================== DELETE CONFIRMATION MODAL ==================== */}
       <ConfirmModal
         isOpen={!!projectToDelete}
         onClose={() => setProjectToDelete(null)}
         onConfirm={handleDeleteConfirm}
         title="Delete Project"
-        message={`Are you sure you want to delete "${projectToDelete?.projectName}"? All tasks associated with this project may be affected.`}
+        message={`Are you sure you want to delete "${projectToDelete?.projectName}"? All associated tasks will be removed.`}
         confirmText="Delete Project"
+        isDanger={true}
         isLoading={isDeleting}
       />
     </div>

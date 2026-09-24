@@ -1,84 +1,33 @@
 /* ==========================================================================
-   DEPARTMENT LIST STYLES
+   DEPARTMENTS PAGE STYLES (MATCHING SAAS DESIGN SYSTEM)
    ========================================================================== */
 
-.departments-page {
+.departments-page-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.departments-header-bar {
+.table-dept-name-cell {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
 }
 
-.departments-action-group {
-  display: flex;
+.table-dept-title-link {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-}
-
-.departments-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.dept-card {
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  transition: all var(--transition-base);
-}
-
-.dept-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-lg);
-}
-
-.dept-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.dept-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-lg);
-  background: var(--primary-subtle);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dept-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.dept-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.dept-card-title {
-  font-size: 1.125rem;
-  font-weight: 700;
+  gap: 8px;
+  font-weight: 600;
   color: var(--text-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-.dept-card-desc {
+.table-dept-title-link:hover {
+  color: #3b82f6;
+}
+
+.table-desc-cell {
   font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -88,19 +37,74 @@
   overflow: hidden;
 }
 
+.table-stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-base);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.dept-summary-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* ==================== CARDS GRID ==================== */
+.departments-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.dept-saas-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-base);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.dept-saas-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+.dept-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dept-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--primary-subtle);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .dept-card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 14px;
+  padding-top: 10px;
   border-top: 1px solid var(--border-subtle);
-}
-
-.dept-projects-count {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
 }

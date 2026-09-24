@@ -10,7 +10,6 @@ import { tagApi } from '../services/api';
 import type { Tag, CreateTagDto, UpdateTagDto } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
-import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
@@ -125,174 +124,159 @@ export default function TagList() {
   };
 
   return (
-    <div className="tags-page">
-      {/* Header */}
-      <div className="tags-header-bar">
+    <div className="tags-page-container">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="page-header-bar">
         <div>
-          <h2 className="page-heading">Tags & Taxonomy</h2>
-          <p className="page-desc">Label and organize work items across your entire workspace.</p>
+          <h1 className="page-main-title">Tags & Taxonomies</h1>
+          <p className="page-sub-title">
+            Define labels, categories, and priority badges used across task workflows.
+          </p>
         </div>
 
-        <button className="btn btn-primary" onClick={() => openTagModal()}>
-          <Plus size={16} />
+        <button className="btn-primary-action" onClick={() => openTagModal()}>
+          <Plus size={16} strokeWidth={2.5} />
           <span>New Tag</span>
         </button>
       </div>
 
-      {/* Main Grid */}
+      {/* ==================== TAGS GRID ==================== */}
       {loading ? (
-        <div className="tags-grid">
-          <Skeleton height="140px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="140px" borderRadius="var(--radius-xl)" />
-          <Skeleton height="140px" borderRadius="var(--radius-xl)" />
+        <div className="tags-grid-layout">
+          <Skeleton height="110px" borderRadius="14px" />
+          <Skeleton height="110px" borderRadius="14px" />
+          <Skeleton height="110px" borderRadius="14px" />
+          <Skeleton height="110px" borderRadius="14px" />
         </div>
       ) : tags.length === 0 ? (
         <EmptyState
           title="No tags created yet"
-          description="Create custom labels to categorize and filter your team tasks."
+          description="Create custom taxonomy tags to organize and prioritize your tasks."
           actionText="Create Tag"
           onAction={() => openTagModal()}
         />
       ) : (
-        <div className="tags-grid">
-          {tags.map(tag => (
-            <div key={tag.tagId} className="glass-card tag-card">
-              <div className="tag-card-top">
-                <Badge
-                  label={`#${tag.tagName}`}
-                  color={tag.color}
-                  size="md"
-                />
-                <div className="tag-actions">
+        <div className="tags-grid-layout">
+          {tags.map(tag => {
+            const tagColor = tag.color || '#6366f1';
+            return (
+              <div key={tag.tagId} className="tag-saas-card">
+                <div className="tag-preview-col">
+                  <span
+                    className="tag-display-pill"
+                    style={{
+                      backgroundColor: `${tagColor}15`,
+                      color: tagColor,
+                      borderColor: `${tagColor}35`,
+                    }}
+                  >
+                    <span className="tag-dot" style={{ backgroundColor: tagColor }} />
+                    #{tag.tagName}
+                  </span>
+                  <span className="tag-hex-label">{tagColor}</span>
+                </div>
+
+                <div className="tag-actions-col">
                   <button
-                    className="btn-icon-sm btn-ghost"
+                    className="table-icon-btn"
                     onClick={() => openTagModal(tag)}
-                    title="Edit"
+                    title="Edit Tag"
                   >
                     <Edit2 size={13} />
                   </button>
                   <button
-                    className="btn-icon-sm btn-ghost text-danger"
+                    className="table-icon-btn delete-btn"
                     onClick={() => setTagToDelete(tag)}
-                    title="Delete"
+                    title="Delete Tag"
                   >
                     <Trash2 size={13} />
                   </button>
                 </div>
               </div>
-
-              <div className="tag-card-details">
-                <div className="tag-color-preview">
-                  <span
-                    className="color-sample"
-                    style={{ backgroundColor: tag.color || '#6366f1' }}
-                  />
-                  <span className="color-hex">{tag.color || '#6366f1'}</span>
-                </div>
-                <span className="tag-id-pill">ID #{tag.tagId}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Tag Modal */}
+      {/* ==================== CREATE / EDIT TAG MODAL ==================== */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingTag ? 'Edit Tag' : 'Create Tag'}
-        subtitle={editingTag ? `Editing #${editingTag.tagId}` : 'Define label name and theme color'}
+        title={editingTag ? 'Edit Tag' : 'Create New Tag'}
         maxWidth="sm"
       >
-        <form onSubmit={handleSubmit}>
-          {/* Live Preview */}
-          <div className="tag-live-preview-box">
-            <span className="preview-label">Live Preview:</span>
-            <Badge
-              label={`#${formData.tagName || 'PreviewTag'}`}
-              color={formData.color}
-              size="md"
-            />
-          </div>
-
+        <form onSubmit={handleSubmit} className="task-form">
           <div className="form-group">
-            <label className="form-label">Tag Name *</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. Frontend, Bug, HighPriority"
-              value={formData.tagName}
-              onChange={e => setFormData({ ...formData, tagName: e.target.value })}
-              required
-            />
+            <label className="form-label" htmlFor="tag-name">
+              Tag Name <span className="required-star">*</span>
+            </label>
+            <div className="tag-input-prefix-box">
+              <span className="input-hash-prefix">#</span>
+              <input
+                id="tag-name"
+                type="text"
+                className="form-input with-prefix"
+                placeholder="e.g., Mobile UI, Frontend, Urgent"
+                value={formData.tagName}
+                onChange={e =>
+                  setFormData(prev => ({
+                    ...prev,
+                    tagName: e.target.value.replace(/^#/, ''),
+                  }))
+                }
+                required
+              />
+            </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">
-              <Palette size={14} style={{ display: 'inline', marginRight: '4px' }} />
-              Choose Color Preset
+              <Palette size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Accent Color
             </label>
-            <div className="preset-colors-grid">
-              {PRESET_COLORS.map(c => {
-                const isSelected = formData.color?.toLowerCase() === c.toLowerCase();
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    className="preset-color-dot"
-                    style={{ backgroundColor: c }}
-                    onClick={() => setFormData({ ...formData, color: c })}
-                  >
-                    {isSelected && <Check size={14} color="#ffffff" />}
-                  </button>
-                );
-              })}
+            <div className="color-palette-picker">
+              {PRESET_COLORS.map(c => (
+                <button
+                  type="button"
+                  key={c}
+                  className={`color-swatch-circle ${formData.color === c ? 'active' : ''}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setFormData(prev => ({ ...prev, color: c }))}
+                >
+                  {formData.color === c && <Check size={14} className="swatch-check" />}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Custom Hex Code</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="color"
-                value={formData.color || '#6366f1'}
-                onChange={e => setFormData({ ...formData, color: e.target.value })}
-                style={{ width: '40px', height: '40px', padding: 0, borderRadius: 'var(--radius-md)', cursor: 'pointer' }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                value={formData.color || ''}
-                onChange={e => setFormData({ ...formData, color: e.target.value })}
-                placeholder="#6366f1"
-              />
-            </div>
-          </div>
-
-          <div className="modal-footer" style={{ margin: '24px -24px -24px -24px' }}>
+          <div className="modal-actions-bar">
             <button
               type="button"
               className="btn btn-secondary"
               onClick={() => setShowModal(false)}
-              disabled={isSubmitting}
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : editingTag ? 'Save Changes' : 'Create Tag'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : editingTag ? 'Update Tag' : 'Create Tag'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* ==================== DELETE CONFIRM MODAL ==================== */}
       <ConfirmModal
         isOpen={!!tagToDelete}
         onClose={() => setTagToDelete(null)}
         onConfirm={handleDeleteConfirm}
         title="Delete Tag"
-        message={`Are you sure you want to delete tag "#${tagToDelete?.tagName}"? Tasks with this tag will be detached.`}
+        message={`Are you sure you want to delete "#${tagToDelete?.tagName}"? It will be removed from all associated tasks.`}
         confirmText="Delete Tag"
+        isDanger={true}
         isLoading={isDeleting}
       />
     </div>
