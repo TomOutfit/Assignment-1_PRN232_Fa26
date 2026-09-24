@@ -14,7 +14,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('tasktrack_theme') as Theme;
     if (saved === 'dark' || saved === 'light') return saved;
-    return 'dark'; // Default to dark mode
+    return 'light'; // Default to light SaaS theme matching screenshot
   });
 
   useEffect(() => {

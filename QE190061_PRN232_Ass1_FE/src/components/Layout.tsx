@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   CheckSquare,
+  MessageSquare,
+  BarChart3,
+  Calendar,
   FolderKanban,
-  Building2,
-  Tag,
+  Users,
+  Settings,
   Search,
-  Settings2,
-  Sliders,
+  Plus,
+  Bell,
+  HelpCircle,
+  ChevronDown,
   Sun,
   Moon,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  Layers,
+  MoreHorizontal,
   Sparkles,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -30,6 +35,7 @@ export default function Layout({ children }: LayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
@@ -44,36 +50,17 @@ export default function Layout({ children }: LayoutProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const publicNavItems = [
-    { path: '/', label: 'Home / Dashboard', icon: LayoutDashboard },
-    { path: '/departments', label: 'Departments', icon: Building2 },
-    { path: '/projects', label: 'Projects', icon: FolderKanban },
-    { path: '/tasks', label: 'Tasks Board', icon: CheckSquare },
-    { path: '/search', label: 'Search & Filter', icon: Search },
+  // Primary navigation matching the reference layout
+  const mainNavItems = [
+    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+    { path: '/search?tab=messages', label: 'Messaging', icon: MessageSquare },
+    { path: '/search?tab=analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/tasks?view=calendar', label: 'Calendar', icon: Calendar },
+    { path: '/projects', label: 'Project', icon: FolderKanban },
+    { path: '/departments', label: 'Teams', icon: Users },
+    { path: '/tasks/manage', label: 'Settings', icon: Settings },
   ];
-
-  const managementNavItems = [
-    { path: '/tasks/manage', label: 'Manage Tasks', icon: Settings2 },
-    { path: '/projects/manage', label: 'Manage Projects', icon: Sliders },
-    { path: '/departments/manage', label: 'Manage Depts', icon: Building2 },
-    { path: '/tags/manage', label: 'Manage Tags', icon: Tag },
-  ];
-
-  const getPageTitle = () => {
-    if (location.pathname === '/') return 'Dashboard Overview';
-    if (location.pathname === '/search') return 'Search & Filter Hub';
-    if (location.pathname.startsWith('/departments/manage')) return 'Department Management';
-    if (location.pathname.startsWith('/departments/')) return 'Department Details';
-    if (location.pathname === '/departments') return 'Departments Directory';
-    if (location.pathname.startsWith('/projects/manage')) return 'Project Management';
-    if (location.pathname.startsWith('/projects/')) return 'Project Details';
-    if (location.pathname === '/projects') return 'Projects Directory';
-    if (location.pathname.startsWith('/tasks/manage')) return 'Task Management Hub';
-    if (location.pathname.startsWith('/tasks/')) return 'Task Details';
-    if (location.pathname === '/tasks') return 'Tasks & Kanban Board';
-    if (location.pathname.startsWith('/tags')) return 'Tag Taxonomy Management';
-    return 'TaskTrack Enterprise';
-  };
 
   return (
     <div className={`app-layout ${collapsed ? 'sidebar-collapsed' : ''}`}>
@@ -82,151 +69,195 @@ export default function Layout({ children }: LayoutProps) {
         <div className="mobile-backdrop" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar Navigation */}
+      {/* Modern Clean Sidebar Navigation */}
       <aside className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+        {/* Sidebar Header with Brand */}
         <div className="sidebar-header">
-          <div className="brand-logo">
-            <div className="brand-icon">
-              <Layers size={22} />
+          <Link to="/" className="brand-logo" onClick={() => setMobileOpen(false)}>
+            <div className="brand-mark">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor" />
+                <rect x="14" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.6" />
+                <rect x="3" y="14" width="7" height="7" rx="2" fill="currentColor" opacity="0.6" />
+                <rect x="14" y="14" width="7" height="7" rx="2" fill="#4f46e5" />
+              </svg>
             </div>
             {!collapsed && (
               <div className="brand-text">
-                <span className="brand-name">TaskTrack</span>
-                <span className="brand-badge">ENTERPRISE</span>
+                <span className="brand-title">THE UNCOMMON</span>
+                <span className="brand-subtitle">DESIGNS</span>
               </div>
             )}
-          </div>
+          </Link>
+
           <button
             className="sidebar-toggle-btn desktop-only"
             onClick={() => setCollapsed(!collapsed)}
             aria-label="Toggle sidebar"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           </button>
+
           <button
             className="sidebar-close-btn mobile-only"
             onClick={() => setMobileOpen(false)}
             aria-label="Close sidebar"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
+        {/* Sidebar Nav Links */}
         <nav className="sidebar-nav">
-          <div className="nav-section-label">{!collapsed && 'PUBLIC PORTAL'}</div>
-          {publicNavItems.map(item => {
+          {mainNavItems.map(item => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            // Check active based on route
+            const isTasks = item.path.startsWith('/tasks') && location.pathname.startsWith('/tasks');
+            const isProjects = item.path === '/projects' && location.pathname.startsWith('/projects');
+            const isDepts = item.path === '/departments' && location.pathname.startsWith('/departments');
+            const isDashboard = item.path === '/' && location.pathname === '/';
+            const isSearch = item.path.startsWith('/search') && location.pathname.startsWith('/search');
+            const isActive = isDashboard || isTasks || isProjects || isDepts || isSearch;
+
             return (
               <NavLink
-                key={item.path}
+                key={item.label}
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
+                className={({ isActive: exactActive }) =>
+                  `nav-item-link ${exactActive || isActive ? 'nav-item-active' : ''}`
+                }
                 title={collapsed ? item.label : undefined}
                 end={item.path === '/'}
               >
-                <div className="nav-icon-wrapper">
-                  <Icon size={18} />
+                <div className="nav-item-icon">
+                  <Icon size={18} strokeWidth={2} />
                 </div>
-                {!collapsed && <span className="nav-label">{item.label}</span>}
-                {isActive && <div className="active-glow-indicator" />}
-              </NavLink>
-            );
-          })}
-
-          <div className="nav-section-label" style={{ marginTop: '12px' }}>
-            {!collapsed && 'MANAGEMENT (CRUD)'}
-          </div>
-          {managementNavItems.map(item => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`}
-                title={collapsed ? item.label : undefined}
-              >
-                <div className="nav-icon-wrapper">
-                  <Icon size={18} />
-                </div>
-                {!collapsed && <span className="nav-label">{item.label}</span>}
-                {isActive && <div className="active-glow-indicator" />}
+                {!collapsed && <span className="nav-item-label">{item.label}</span>}
               </NavLink>
             );
           })}
         </nav>
 
+        {/* Sidebar Footer with Theme Toggle & User Profile */}
         <div className="sidebar-footer">
-          {!collapsed ? (
-            <div className="system-status-card">
-              <div className="status-indicator">
-                <span className="status-dot" />
-                <span className="status-text">Backend & API Ready</span>
-              </div>
-              <div className="status-sub">PRN232 Assignment 1</div>
+          {/* Quick theme & system bar */}
+          <div className="sidebar-utility-row">
+            <button
+              className="utility-btn"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+            >
+              {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
+              {!collapsed && <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>}
+            </button>
+            <button
+              className="utility-btn"
+              onClick={() => setCmdOpen(true)}
+              title="Command Palette (Ctrl+K)"
+            >
+              <Sparkles size={16} />
+              {!collapsed && <span>Shortcuts</span>}
+            </button>
+          </div>
+
+          {/* User Profile Card */}
+          <div className="sidebar-user-profile">
+            <div className="user-avatar-wrapper">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                alt="Nitin"
+                className="user-avatar-img"
+                onError={(e) => {
+                  // Fallback avatar initial
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+              <div className="user-avatar-fallback">N</div>
+              <span className="user-status-dot online" />
             </div>
-          ) : (
-            <div className="collapsed-status-dot" title="Backend & API Ready" />
-          )}
+
+            {!collapsed && (
+              <div className="user-info">
+                <span className="user-name">Nitin</span>
+                <span className="user-email">nitin@design.com</span>
+              </div>
+            )}
+
+            {!collapsed && (
+              <button
+                className="user-more-btn"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                title="Account options"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            )}
+          </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main App Canvas */}
       <div className="app-main-wrapper">
-        {/* Header Bar */}
-        <header className="app-header">
-          <div className="header-left">
+        {/* Top Header Bar matching Screenshot */}
+        <header className="app-topbar">
+          <div className="topbar-left">
             <button
-              className="menu-btn mobile-only"
+              className="menu-hamburger-btn mobile-only"
               onClick={() => setMobileOpen(true)}
-              aria-label="Open menu"
+              aria-label="Open navigation"
             >
               <Menu size={20} />
             </button>
-            <div className="page-breadcrumb">
-              <h1 className="current-page-title">{getPageTitle()}</h1>
-            </div>
           </div>
 
-          <div className="header-right">
-            <button
-              className="header-quick-search desktop-only"
-              onClick={() => setCmdOpen(true)}
-              title="Open Command Palette (Ctrl+K)"
-              type="button"
-            >
-              <Search size={14} />
-              <span>Search tasks, projects, depts...</span>
-              <span className="search-shortcut">⌘K</span>
-            </button>
-
-            <div className="workspace-badge desktop-only">
-              <Sparkles size={14} className="sparkle-icon" />
-              <span>Public Access</span>
+          {/* Center / Right Header Tools */}
+          <div className="topbar-right">
+            {/* Global Search Input */}
+            <div className="header-search-bar" onClick={() => setCmdOpen(true)}>
+              <Search size={15} className="search-bar-icon" />
+              <input
+                type="text"
+                placeholder="Search tasks, projects..."
+                readOnly
+                className="search-bar-input"
+              />
+              <span className="search-kbd-badge">⌘K</span>
             </div>
 
-            {/* Theme Switcher Button */}
-            <button
-              className="theme-switcher-btn btn-icon"
-              onClick={toggleTheme}
-              aria-label="Toggle theme mode"
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-            >
-              {theme === 'dark' ? (
-                <Sun size={18} className="theme-icon sun-icon" />
-              ) : (
-                <Moon size={18} className="theme-icon moon-icon" />
-              )}
+            {/* Quick Action: New Project */}
+            <Link to="/projects/manage" className="btn-new-project">
+              <Plus size={15} strokeWidth={2.5} />
+              <span>New Project</span>
+            </Link>
+
+            {/* Notification Bell */}
+            <button className="topbar-icon-btn notification-btn" title="Notifications">
+              <Bell size={17} />
+              <span className="notification-indicator" />
             </button>
+
+            {/* Help Icon */}
+            <button className="topbar-icon-btn" title="Help & Guides">
+              <HelpCircle size={17} />
+            </button>
+
+            {/* User Dropdown Thumbnail */}
+            <div className="topbar-user-dropdown" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                alt="Nitin"
+                className="topbar-avatar-img"
+              />
+              <ChevronDown size={14} className="dropdown-arrow" />
+            </div>
           </div>
         </header>
 
-        {/* Page Content Body */}
-        <main className="app-content animate-fade-in">
-          <div className="content-container">{children}</div>
+        {/* Page Content Viewport */}
+        <main className="app-main-content animate-fade-in">
+          <div className="main-content-inner">{children}</div>
         </main>
       </div>
 
