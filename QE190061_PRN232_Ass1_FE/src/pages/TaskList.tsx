@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus,
+  Search,
   Kanban,
   Table as TableIcon,
   Calendar,
@@ -18,8 +19,8 @@ import {
   ChevronDown,
   Check,
 } from 'lucide-react';
-import { taskApi, projectApi, tagApi } from '../services/api';
-import type { Task, CreateTaskDto, UpdateTaskDto, Project, Tag } from '../types';
+import { taskApi, projectApi, departmentApi, tagApi } from '../services/api';
+import type { Task, CreateTaskDto, UpdateTaskDto, Project, Department, Tag } from '../types';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { TaskStatusBadge } from '../components/ui/Badge';
@@ -46,6 +47,7 @@ const PRIORITY_OPTIONS = [
 export default function TaskList() {
   const toast = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,14 +55,13 @@ export default function TaskList() {
   // View Mode: 'kanban' | 'table'
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
-  // Filters matching top toolbar in reference
+  // Dynamic Filters based on real database entities
   const [searchTitle, setSearchTitle] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState<number | ''>('');
   const [filterProject, setFilterProject] = useState<number | ''>('');
   const [filterStatus, setFilterStatus] = useState<number | ''>('');
   const [filterPriority, setFilterPriority] = useState<number | ''>('');
   const [filterTag, setFilterTag] = useState<number | ''>('');
-  const [filterAssignee, setFilterAssignee] = useState<string>('all');
-  const [filterSubtasks, setFilterSubtasks] = useState<string>('all');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -112,15 +113,16 @@ export default function TaskList() {
     }
   }, [searchTitle, filterStatus, filterPriority, filterProject, filterTag, toast]);
 
-  // Fetch Auxiliary Data
+  // Fetch Auxiliary Data from real database
   useEffect(() => {
-    Promise.all([projectApi.getAll(), tagApi.getAll()])
-      .then(([projs, tgs]) => {
+    Promise.all([departmentApi.getAll(), projectApi.getAll(), tagApi.getAll()])
+      .then(([depts, projs, tgs]) => {
+        setDepartments(depts);
         setProjects(projs);
         setTags(tgs);
       })
       .catch(() => {
-        toast.error('Failed to load project & tag metadata.');
+        toast.error('Failed to load filter metadata.');
       });
   }, [toast]);
 
@@ -247,21 +249,20 @@ export default function TaskList() {
   // Reset Filters
   const resetFilters = () => {
     setSearchTitle('');
+    setFilterDepartment('');
     setFilterProject('');
     setFilterStatus('');
     setFilterPriority('');
     setFilterTag('');
-    setFilterAssignee('all');
-    setFilterSubtasks('all');
   };
 
   const hasActiveFilters =
     searchTitle ||
+    filterDepartment !== '' ||
     filterProject !== '' ||
     filterStatus !== '' ||
     filterPriority !== '' ||
-    filterTag !== '' ||
-    filterAssignee !== 'all';
+    filterTag !== '';
 
   // Get Mockup visual for specific design tasks to match layout screenshot
   const getTaskMockup = (task: Task) => {
@@ -291,6 +292,20 @@ export default function TaskList() {
     return (taskId * 7 + 4) % 24;
   };
 
+  // Dynamically filtered projects based on selected department (if any)
+  const availableProjects = filterDepartment !== ''
+    ? projects.filter(p => p.departmentId === filterDepartment)
+    : projects;
+
+  // Refined tasks list applying active filters
+  const filteredTasks = tasks.filter(task => {
+    if (filterDepartment !== '') {
+      const proj = projects.find(p => p.projectId === task.projectId);
+      if (!proj || proj.departmentId !== filterDepartment) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="tasks-board-page">
       {/* ==================== PAGE HEADER & ACTION CONTROLS ==================== */}
@@ -298,39 +313,49 @@ export default function TaskList() {
         <div className="board-title-group">
           <h1 className="board-main-title">My Tasks</h1>
           
-          {/* Filter Dropdown Pills */}
+          {/* Dynamic Filter Dropdown Pills from Real Database */}
           <div className="filter-pills-bar">
-            {/* Subtasks Filter */}
-            <div className="filter-pill-dropdown">
-              <select
-                value={filterSubtasks}
-                onChange={e => setFilterSubtasks(e.target.value)}
-                className="filter-pill-select"
-              >
-                <option value="all">Subtasks</option>
-                <option value="with_subtasks">With subtasks</option>
-                <option value="no_subtasks">No subtasks</option>
-              </select>
-              <ChevronDown size={13} className="pill-arrow-icon" />
+            {/* Search Input Pill */}
+            <div className="search-pill-box" style={{ minWidth: '220px', flex: 'none' }}>
+              <Search size={14} className="search-pill-icon" />
+              <input
+                type="text"
+                className="search-pill-input"
+                placeholder="Search tasks by title..."
+                value={searchTitle}
+                onChange={e => setSearchTitle(e.target.value)}
+              />
+              {searchTitle && (
+                <button className="clear-pill-btn" onClick={() => setSearchTitle('')}>
+                  <X size={13} />
+                </button>
+              )}
             </div>
 
-            {/* Me / Assignee Filter */}
-            <div className="filter-pill-dropdown">
-              <select
-                value={filterAssignee}
-                onChange={e => setFilterAssignee(e.target.value)}
-                className="filter-pill-select"
-              >
-                <option value="all">Assignees</option>
-                <option value="me">Me</option>
-                <option value="sarah">Sarah L.</option>
-                <option value="david">David K.</option>
-                <option value="alex">Alex R.</option>
-              </select>
-              <ChevronDown size={13} className="pill-arrow-icon" />
-            </div>
+            {/* Department Filter (Dynamic from DB) */}
+            {departments.length > 0 && (
+              <div className="filter-pill-dropdown">
+                <select
+                  value={filterDepartment}
+                  onChange={e => {
+                    const val = e.target.value ? Number(e.target.value) : '';
+                    setFilterDepartment(val);
+                    setFilterProject(''); // Reset project if department changes
+                  }}
+                  className="filter-pill-select"
+                >
+                  <option value="">Departments</option>
+                  {departments.map(d => (
+                    <option key={d.departmentId} value={d.departmentId}>
+                      {d.departmentName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={13} className="pill-arrow-icon" />
+              </div>
+            )}
 
-            {/* Project Filter */}
+            {/* Project Filter (Dynamic from DB) */}
             <div className="filter-pill-dropdown">
               <select
                 value={filterProject}
@@ -338,7 +363,7 @@ export default function TaskList() {
                 className="filter-pill-select"
               >
                 <option value="">Projects</option>
-                {projects.map(p => (
+                {availableProjects.map(p => (
                   <option key={p.projectId} value={p.projectId}>
                     {p.projectName}
                   </option>
@@ -347,7 +372,7 @@ export default function TaskList() {
               <ChevronDown size={13} className="pill-arrow-icon" />
             </div>
 
-            {/* Priority Filter */}
+            {/* Priority Filter (Dynamic enum) */}
             <div className="filter-pill-dropdown">
               <select
                 value={filterPriority}
@@ -364,7 +389,7 @@ export default function TaskList() {
               <ChevronDown size={13} className="pill-arrow-icon" />
             </div>
 
-            {/* Tag Filter */}
+            {/* Tag Filter (Dynamic from DB) */}
             {tags.length > 0 && (
               <div className="filter-pill-dropdown">
                 <select
@@ -376,6 +401,25 @@ export default function TaskList() {
                   {tags.map(t => (
                     <option key={t.tagId} value={t.tagId}>
                       #{t.tagName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={13} className="pill-arrow-icon" />
+              </div>
+            )}
+
+            {/* Status Filter (Especially for Table View or general filter) */}
+            {viewMode === 'table' && (
+              <div className="filter-pill-dropdown">
+                <select
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value ? Number(e.target.value) : '')}
+                  className="filter-pill-select"
+                >
+                  <option value="">Status</option>
+                  {STATUS_COLUMNS.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.title}
                     </option>
                   ))}
                 </select>
@@ -429,7 +473,7 @@ export default function TaskList() {
           <Skeleton height="400px" borderRadius="16px" />
           <Skeleton height="400px" borderRadius="16px" />
         </div>
-      ) : tasks.length === 0 ? (
+      ) : filteredTasks.length === 0 ? (
         <EmptyState
           title="No tasks match your criteria"
           description="Try clearing your filters or create a new task to get started."
@@ -440,7 +484,7 @@ export default function TaskList() {
         /* ==================== KANBAN BOARD VIEW ==================== */
         <div className="kanban-board-grid">
           {STATUS_COLUMNS.map(col => {
-            const colTasks = tasks.filter(t => t.status === col.id);
+            const colTasks = filteredTasks.filter(t => t.status === col.id);
             return (
               <div key={col.id} className="kanban-column-wrapper">
                 {/* Column Header */}
@@ -673,7 +717,7 @@ export default function TaskList() {
               </tr>
             </thead>
             <tbody>
-              {tasks.map(task => {
+              {filteredTasks.map(task => {
                 const progress = getTaskProgress(task);
                 return (
                   <tr key={task.taskId}>
