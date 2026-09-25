@@ -37,3 +37,7 @@ Thumbs.db
 *.docx
 *.sql
 *.slnx
+
+# Agents & AI configs
+.agents/
+
