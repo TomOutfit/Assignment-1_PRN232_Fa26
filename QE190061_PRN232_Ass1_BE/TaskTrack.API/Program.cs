@@ -6,6 +6,9 @@ using TaskTrack.Repo.Models;
 using TaskTrack.Repo.Repositories;
 using TaskTrack.Service.Services;
 
+// Enable Npgsql legacy timestamp behavior for compatibility with 'timestamp without time zone'
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Load .env file in Development
